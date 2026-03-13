@@ -5,7 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 
-public class Constants {
+public class Constant {
 
     public static final String url = "jdbc:postgresql://localhost:5432/StoreManagement";
     public static final String user = "postgres";

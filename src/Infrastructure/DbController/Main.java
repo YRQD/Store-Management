@@ -1,5 +1,6 @@
 package Infrastructure.DbController;
 
+import java.lang.reflect.Field;
 import java.sql.*;
 import java.sql.SQLException;
 
@@ -7,48 +8,28 @@ public class Main {
 
     public static void startConnection() {
         try {
-            Constants.con = DriverManager.getConnection(Constants.url, Constants.user, Constants.password);
-            Constants.st = Constants.con.createStatement();
-            System.out.println(Constants.url);
+            Constant.con = DriverManager.getConnection(Constant.url, Constant.user, Constant.password);
+            Constant.st = Constant.con.createStatement();
+            System.out.println(Constant.url);
         } catch (SQLException e) {
-            System.out.println(Constants.url);
+            System.out.println(Constant.url);
             System.exit(0);
-        }
-    }
-
-    public static int getRowsNumber(String tableName) {
-        try {
-            Constants.rsl = Constants.st.executeQuery("SELECT COUNT(*) FROM ".concat(tableName));
-            Constants.rsl.next();
-            return Constants.rsl.getInt(1);
-        } catch (SQLException e) {
-            return -1;
-        }
-    }
-
-    public static int getColumnsNumber(String tableName) {
-        try {
-            Constants.rsl = Constants.st.executeQuery("SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '".concat(tableName).concat("'"));
-            Constants.rsl.next();
-            return Constants.rsl.getInt(1);
-        } catch (SQLException e) {
-            return -1;
         }
     }
 
     public static Object[][] getAll(String tableName) {
         String sql = "SELECT * FROM ".concat(tableName);
 
-        int rowsCount = Main.getRowsNumber(tableName);
-        int columnsCount = Main.getColumnsNumber(tableName);
+        int rowsCount = Helper.getRowsNumber(tableName);
+        int columnsCount = Helper.getColumnsNumber(tableName);
 
         Object[][] data = new Object[rowsCount][columnsCount];
         int j = 0;
         try {
-            Constants.rsl = Constants.st.executeQuery(sql);
-            while (Constants.rsl.next()) {
+            Constant.rsl = Constant.st.executeQuery(sql);
+            while (Constant.rsl.next()) {
                 for (int i = 0; i < columnsCount; i++) {
-                    data[j][i] = Constants.rsl.getString(i + 1);
+                    data[j][i] = Constant.rsl.getString(i + 1);
                 }
                 j++;
             }
@@ -58,11 +39,39 @@ public class Main {
         return data;
     }
 
+    public static String insertInto(Object object, String tableName) {
+        Field[] fields = object.getClass().getFields();
+        String sql = "INSERT INTO " + tableName + '(' + Helper.columnsPart(fields) + ")VALUES(" + Helper.questionMarksPart(fields) + ')';
+
+        try {
+            Constant.pst = Constant.con.prepareStatement(sql);
+            for (int i = 0; i < fields.length; i++) {
+                Field field = fields[i];
+                field.setAccessible(true);
+                Object value = field.get(object);
+                switch (value) {
+                    case String a -> Constant.pst.setString(i + 1, a);
+                    case Integer b -> Constant.pst.setInt(i + 1, b);
+                    case Float c -> Constant.pst.setFloat(i + 1, c);
+                    case null, default -> Constant.pst.setObject(i + 1, value);
+                }
+            }
+
+            Constant.pst.execute();
+
+        } catch (SQLException e) {
+            return "ERROR: INSERTING INTO ".concat(tableName).concat(e.getMessage());
+        } catch (IllegalAccessException e) {
+            return "ERROR: ACCESSING FIELDS OF THE OBJECT: ".concat(e.getMessage());
+        }
+        return ("SUCCESSFUL INSERT INTO ".concat(tableName));
+    }
+
     public static void closeConnection() {
         try {
-            if (Constants.rsl != null) Constants.rsl.close();
-            if (Constants.st != null) Constants.st.close();
-            if (Constants.con != null) Constants.con.close();
+            if (Constant.rsl != null) Constant.rsl.close();
+            if (Constant.st != null) Constant.st.close();
+            if (Constant.con != null) Constant.con.close();
         } catch (SQLException e) {
             System.out.println("Error closing database resources: " + e.getMessage());
         }
