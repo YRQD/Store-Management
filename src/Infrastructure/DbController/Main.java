@@ -23,6 +23,9 @@ public class Main {
         int rowsCount = Helper.getRowsNumber(tableName);
         int columnsCount = Helper.getColumnsNumber(tableName);
 
+        if (rowsCount < 0 || columnsCount < 0)
+            return new Object[0][0];
+
         Object[][] data = new Object[rowsCount][columnsCount];
         int j = 0;
         try {
@@ -72,6 +75,7 @@ public class Main {
             if (Constant.rsl != null) Constant.rsl.close();
             if (Constant.st != null) Constant.st.close();
             if (Constant.con != null) Constant.con.close();
+            System.out.println("Database resources closed successfully.");
         } catch (SQLException e) {
             System.out.println("Error closing database resources: " + e.getMessage());
         }

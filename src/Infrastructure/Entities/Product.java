@@ -12,9 +12,6 @@ public class Product {
     public int reorderlevel;
     public String location;
 
-  /*  public static final String[] columnsNames =
-            {"categoryid", "supplierid", "barcode_sku", "partname", "costprice", "stockquantity", "brand", "reorderlevel", "location"};
-*/
     public Product() {
     }
     public Product(int categoryid, Integer supplierid, String barcode_sku, String partname, float costprice, float sellingprice, int stockquantity, String brand, int reorderlevel, String location) {

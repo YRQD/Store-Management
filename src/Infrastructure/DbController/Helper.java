@@ -25,6 +25,19 @@ public class Helper {
         }
     }
 
+    public static String[] getColumnsNames(String tableName) {
+        String[] columnsNames = new String[getColumnsNumber(tableName)];
+        try {
+            Constant.rsl = Constant.st.executeQuery("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '".concat(tableName).concat("' ORDER BY ORDINAL_POSITION;"));
+            for (int i = 0; Constant.rsl.next(); i++)
+                columnsNames[i] = Constant.rsl.getString(1).toUpperCase();
+            return columnsNames;
+        } catch (SQLException e) {
+            System.out.println("Error in getColumnsNames: " + e.getMessage());
+            return null;
+        }
+    }
+
     public static StringBuilder columnsPart(Field[] fields) {
         StringBuilder columnsPart = new StringBuilder();
         for (Field field : fields)
