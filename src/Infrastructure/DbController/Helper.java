@@ -49,10 +49,21 @@ public class Helper {
 
     public static StringBuilder questionMarksPart(Field[] fields) {
         StringBuilder questionMarksPart = new StringBuilder();
-        for (Field field : fields)
-            questionMarksPart.append("?,");
+        questionMarksPart.append("?,".repeat(fields.length));
         int l = questionMarksPart.length();
         questionMarksPart.delete(l - 1, l);
         return questionMarksPart;
+    }
+
+    public static boolean barcodeExists(String barcode) {
+        try {
+            Constant.pst = Constant.con.prepareStatement("SELECT 1 FROM products WHERE barcode_sku = ? LIMIT 1");
+            Constant.pst.setString(1, barcode);
+            Constant.rsl = Constant.pst.executeQuery();
+            return Constant.rsl.next();
+        } catch (SQLException e) {
+            System.out.println("Error in barcodeExists: " + e.getMessage());
+            return false;
+        }
     }
 }

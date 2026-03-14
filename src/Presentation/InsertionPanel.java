@@ -1,6 +1,7 @@
 package Presentation;
 
 import Infrastructure.DbController.Constant;
+import Infrastructure.DbController.Helper;
 import Infrastructure.DbController.Main;
 import Infrastructure.Entities.Category;
 import Infrastructure.Entities.Product;
@@ -166,7 +167,12 @@ public class InsertionPanel extends JPanel {
         clearCategoryButton.addActionListener(_ -> clearCategoryFields());
         insertProductButton.addActionListener(_ -> insertProduct());
         clearProductButton.addActionListener(_ -> clearProductFields());
-        generateBarcodeButton.addActionListener(_ -> statusLabel.setText("Barcode generation is not implemented yet."));
+        generateBarcodeButton.addActionListener(_ -> generateBarcode());
+    }
+
+    private void generateBarcode() {
+        String barcode = Infrastructure.DbController.XPrinter.generateRandomCode();
+        productBarcodeField.setText(barcode);
     }
 
     private void insertCategory() {
@@ -204,6 +210,10 @@ public class InsertionPanel extends JPanel {
             statusLabel.setText("Barcode is required.");
             return;
         }
+        if (Helper.barcodeExists(barcode)){
+            statusLabel.setText("Barcode already exists. Please generate a new one.");
+            return;
+        }
         String partName = productPartNameField.getText().trim();
         Float costPrice = parseRequiredFloat(productCostPriceField, "Cost Price");
         if (costPrice == null) {
@@ -238,6 +248,7 @@ public class InsertionPanel extends JPanel {
         );
 
         String result = Main.insertInto(product, "products");
+        productBarcodeField.setText("");
         statusLabel.setText(result);
     }
 
