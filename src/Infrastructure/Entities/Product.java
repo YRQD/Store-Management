@@ -12,8 +12,6 @@ public class Product {
     public int reorderlevel;
     public String location;
 
-    public Product() {
-    }
     public Product(int categoryid, Integer supplierid, String barcode_sku, String partname, float costprice, float sellingprice, int stockquantity, String brand, int reorderlevel, String location) {
         this.categoryid = categoryid;
         this.supplierid = supplierid;

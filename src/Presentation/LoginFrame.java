@@ -8,7 +8,6 @@ import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import java.awt.*;
-import java.util.Objects;
 
 import static Presentation.UiTheme.*;
 
@@ -142,9 +141,6 @@ public class LoginFrame extends JFrame {
     }
 
     private boolean isValidRole(String role) {
-        return Objects.equals(role, "Manager") || Objects.equals(role, "Admin");
+        return role != null && (role.equalsIgnoreCase("Manager") || role.equalsIgnoreCase("Admin"));
     }
 }
-
-
-

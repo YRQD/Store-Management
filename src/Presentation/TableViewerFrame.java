@@ -47,10 +47,6 @@ public class TableViewerFrame extends JFrame {
     private final JLabel statusLabel = new JLabel(" ");
     private final Timer searchDebounceTimer = new Timer(300, _ -> executeSearch());
 
-    public TableViewerFrame(String defaultTable) {
-        this(defaultTable, "Manager");
-    }
-
     public TableViewerFrame(String defaultTable, String role) {
         super("Store Management");
         managerRole = isManager(role);
@@ -454,7 +450,11 @@ public class TableViewerFrame extends JFrame {
         adjustColumnWidths();
         applyAutoResizeMode();
         updatePrintButtonState();
-        statusLabel.setText("Loaded " + data.length + " rows from " + tableName + ".");
+        if (data.length == 0) {
+            statusLabel.setText("No rows match the current filters for " + tableName + ".");
+        } else {
+            statusLabel.setText("Loaded " + data.length + " rows from " + tableName + ".");
+        }
     }
 
     private String buildCondition(String tableName) {
@@ -489,17 +489,17 @@ public class TableViewerFrame extends JFrame {
 
     private void printSelectedProduct() {
         if (!PRODUCTS_TABLE.equalsIgnoreCase(resolveSelectedTable())) {
-            statusLabel.setText("Please load the products table to print a barcode.");
+            showWarning("Please load the products table to print a barcode.");
             return;
         }
         int viewRow = table.getSelectedRow();
         if (viewRow < 0) {
-            statusLabel.setText("Please select a product row first.");
+            showWarning("Please select a product row first.");
             return;
         }
         String barcode = resolveBarcodeFromRow(viewRow);
         if (barcode == null || barcode.isBlank()) {
-            statusLabel.setText("Selected row does not contain a barcode.");
+            showWarning("Selected row does not contain a barcode.");
             return;
         }
         PrintOptions options = showPrintOptionsDialog();
@@ -508,6 +508,11 @@ public class TableViewerFrame extends JFrame {
         }
         String message = XPrinter.printCode_39(barcode, options.copies(), options.evenLabel());
         statusLabel.setText(message);
+    }
+
+    private void showWarning(String message) {
+        statusLabel.setText(message);
+        JOptionPane.showMessageDialog(this, message, "Notice", JOptionPane.WARNING_MESSAGE);
     }
 
     private String resolveBarcodeFromRow(int viewRow) {
