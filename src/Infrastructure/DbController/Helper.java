@@ -1,15 +1,17 @@
 package Infrastructure.DbController;
 
+import static Infrastructure.DbController.Constant.*;
+
 import java.lang.reflect.Field;
 import java.sql.SQLException;
 
 public class Helper {
 
-    public static int getRowsNumber(String tableName) {
+    public static int getRowsNumber(String tableName, String condition) {
         try {
-            Constant.rsl = Constant.st.executeQuery("SELECT COUNT(*) FROM ".concat(tableName));
-            Constant.rsl.next();
-            return Constant.rsl.getInt(1);
+            rsl = st.executeQuery("SELECT COUNT(*) FROM " + tableName + " WHERE " + condition);
+            rsl.next();
+            return rsl.getInt(1);
         } catch (SQLException e) {
             return -1;
         }
@@ -17,9 +19,9 @@ public class Helper {
 
     public static int getColumnsNumber(String tableName) {
         try {
-            Constant.rsl = Constant.st.executeQuery("SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '".concat(tableName).concat("'"));
-            Constant.rsl.next();
-            return Constant.rsl.getInt(1);
+            rsl = st.executeQuery("SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '".concat(tableName).concat("'"));
+            rsl.next();
+            return rsl.getInt(1);
         } catch (SQLException e) {
             return -1;
         }
@@ -28,9 +30,9 @@ public class Helper {
     public static String[] getColumnsNames(String tableName) {
         String[] columnsNames = new String[getColumnsNumber(tableName)];
         try {
-            Constant.rsl = Constant.st.executeQuery("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '".concat(tableName).concat("' ORDER BY ORDINAL_POSITION;"));
-            for (int i = 0; Constant.rsl.next(); i++)
-                columnsNames[i] = Constant.rsl.getString(1).toUpperCase();
+            rsl = st.executeQuery("SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '".concat(tableName).concat("' ORDER BY ORDINAL_POSITION;"));
+            for (int i = 0; rsl.next(); i++)
+                columnsNames[i] = rsl.getString(1).toUpperCase();
             return columnsNames;
         } catch (SQLException e) {
             System.out.println("Error in getColumnsNames: " + e.getMessage());
@@ -57,13 +59,43 @@ public class Helper {
 
     public static boolean barcodeExists(String barcode) {
         try {
-            Constant.pst = Constant.con.prepareStatement("SELECT 1 FROM products WHERE barcode_sku = ? LIMIT 1");
-            Constant.pst.setString(1, barcode);
-            Constant.rsl = Constant.pst.executeQuery();
-            return Constant.rsl.next();
+            pst = con.prepareStatement("SELECT 1 FROM products WHERE barcode_sku = ? LIMIT 1");
+            pst.setString(1, barcode);
+            rsl = pst.executeQuery();
+            return rsl.next();
         } catch (SQLException e) {
             System.out.println("Error in barcodeExists: " + e.getMessage());
             return false;
+        }
+    }
+
+    public static boolean userExists(String username, String password) {
+        try {
+            pst = con.prepareStatement("SELECT passwordhash FROM users WHERE username = ?");
+            pst.setString(1, username);
+            rsl = pst.executeQuery();
+            if (rsl.next()) {
+                String hashedPasswordFromDB = rsl.getString(1);
+                return PasswordManager.verifyPassword(password, hashedPasswordFromDB);
+            }
+            return false;
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
+    public static String getUserPermission(String username) {
+            try {
+            pst = con.prepareStatement("SELECT role FROM users WHERE username = ?");
+            pst.setString(1, username);
+            rsl = pst.executeQuery();
+            if (rsl.next()) {
+                String userPermission = rsl.getString(1);
+                return userPermission;
+            }
+            return "No permission found for user: " + username;
+        } catch (SQLException e) {
+            return "Error in getUserPermission: " + e.getMessage();
         }
     }
 }

@@ -9,7 +9,7 @@ import java.nio.charset.StandardCharsets;
 public class XPrinter {
 
     public static String generateRandomCode() {
-        String ALLOWED_CHARACTERS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-.$/+%";
+        String ALLOWED_CHARACTERS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         int length = 8;
 
         SecureRandom random = new SecureRandom();
@@ -23,16 +23,23 @@ public class XPrinter {
         return randomCode.toString();
     }
 
-    private static String printCode_39(String barcodeId, int copies) {
+    public static String printCode_39(String barcodeId, int copies, boolean isEvenLabel) {
         String xPrinterName = "Xprinter XP-246B";
 
-        String tsplCommand = "SIZE 50 mm, 25 mm\r\n" +  // Label size
+        String tsplCommand = "SIZE 40 mm, 25 mm\r\n" +  // Label size
                 "GAP 2 mm, 0 mm\r\n" +                  // Gap between labels
                 "DIRECTION 1\r\n" +                     // Print orientation
-                "CLS\r\n" +                             // Clear the image buffer
-
-                "BARCODE 20,15,\"39\",40,1,0,2,4,\"" + barcodeId + "\"\r\n" +
-                "PRINT " + copies + "\r\n";
+                "CLS\r\n";                              // Clear the image buffer
+        if (isEvenLabel) {
+            tsplCommand +=
+                    "BARCODE 20,16,\"39\",50,1,0,2,4,\"" + barcodeId + "\"\r\n" +
+                            "BARCODE 20,116,\"39\",50,1,0,2,4,\"" + barcodeId + "\"\r\n" +
+                            "PRINT " + copies + "\r\n";
+        } else {
+            tsplCommand +=
+                    "BARCODE 20,16,\"39\",50,1,0,2,4,\"" + barcodeId + "\"\r\n" +
+                            "PRINT " + copies + "\r\n";
+        }
 
         return sendRawToPrinter(xPrinterName, tsplCommand);
     }

@@ -3,16 +3,10 @@ public class Launch {
         Infrastructure.DbController.Main.startConnection();
 
         javax.swing.SwingUtilities.invokeLater(() -> {
-            Presentation.TableViewerFrame frame = new Presentation.TableViewerFrame("products");
-            frame.setVisible(true);
+            Presentation.LoginFrame login = new Presentation.LoginFrame("products");
+            login.setVisible(true);
         });
 
         Runtime.getRuntime().addShutdownHook(new Thread(Infrastructure.DbController.Main::closeConnection));
     }
 }
-  /*frame.addWindowListener(new java.awt.event.WindowAdapter() {
-                @Override
-                public void windowClosing(java.awt.event.WindowEvent e) {
-                    Infrastructure.DbController.Main.closeConnection();
-                }
-            });*/

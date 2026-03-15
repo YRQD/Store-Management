@@ -1,18 +1,17 @@
 package Presentation;
 
-import Infrastructure.DbController.Constant;
-import Infrastructure.DbController.Helper;
-import Infrastructure.DbController.Main;
-import Infrastructure.Entities.Category;
-import Infrastructure.Entities.Product;
+import Infrastructure.DbController.*;
+import Infrastructure.Entities.*;
+
+import java.util.List;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.sql.SQLException;
+
+import static Presentation.UiTheme.*;
 
 public class InsertionPanel extends JPanel {
-    private static final String UI_FONT_FAMILY = "Times New Roman";
     private static final float UI_FONT_SIZE = 16f;
     private static final float SECTION_TITLE_SIZE = 18f;
 
@@ -31,7 +30,7 @@ public class InsertionPanel extends JPanel {
     private final JTextField productStockQuantityField = new JTextField(10);
     private final JTextField productBrandField = new JTextField(12);
     private final JTextField productReorderLevelField = new JTextField(10);
-    private final JTextField productLocationField = new JTextField(12);
+    private final JComboBox<String> productLocationCombo = new JComboBox<>(new String[] {"Storage", "Shop"});
 
     private final JButton insertCategoryButton = new JButton("Insert Category");
     private final JButton clearCategoryButton = new JButton("Clear Category");
@@ -40,27 +39,43 @@ public class InsertionPanel extends JPanel {
 
     public InsertionPanel() {
         super(new BorderLayout(12, 12));
+        setBackground(APP_BG);
         buildLayout();
         styleButtons();
+        styleInputs();
         bindActions();
         loadComboData();
     }
 
     private void buildLayout() {
         JPanel contentPanel = new JPanel(new GridLayout(1, 2, 16, 0));
+        contentPanel.setBackground(APP_BG);
         contentPanel.setBorder(new EmptyBorder(12, 12, 12, 12));
-        contentPanel.add(buildCategoryPanel());
-        contentPanel.add(buildProductPanel());
+        contentPanel.add(wrapInCard(buildCategoryPanel()));
+        contentPanel.add(wrapInCard(buildProductPanel()));
 
         statusLabel.setBorder(new EmptyBorder(8, 12, 8, 12));
         statusLabel.setFont(resolveFont(Font.PLAIN, UI_FONT_SIZE, statusLabel.getFont()));
+        statusLabel.setForeground(TEXT_MUTED);
 
         add(contentPanel, BorderLayout.CENTER);
         add(statusLabel, BorderLayout.SOUTH);
     }
 
+    private JPanel wrapInCard(JPanel panel) {
+        JPanel card = new JPanel(new BorderLayout());
+        card.setBackground(CARD_BG);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(INPUT_BORDER),
+                new EmptyBorder(12, 12, 12, 12)
+        ));
+        card.add(panel, BorderLayout.CENTER);
+        return card;
+    }
+
     private JPanel buildCategoryPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(CARD_BG);
         panel.setBorder(BorderFactory.createTitledBorder("Categories"));
 
         GridBagConstraints gbc = baseConstraints();
@@ -74,6 +89,7 @@ public class InsertionPanel extends JPanel {
         insertCategoryButton.setFont(resolveFont(Font.BOLD, UI_FONT_SIZE, insertCategoryButton.getFont()));
         clearCategoryButton.setFont(resolveFont(Font.PLAIN, UI_FONT_SIZE, clearCategoryButton.getFont()));
         JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        actionPanel.setBackground(CARD_BG);
         actionPanel.add(insertCategoryButton);
         actionPanel.add(clearCategoryButton);
         panel.add(actionPanel, gbc);
@@ -84,6 +100,7 @@ public class InsertionPanel extends JPanel {
 
     private JPanel buildProductPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(CARD_BG);
         panel.setBorder(BorderFactory.createTitledBorder("Products"));
 
         GridBagConstraints gbc = baseConstraints();
@@ -97,7 +114,7 @@ public class InsertionPanel extends JPanel {
         addField(panel, gbc, row++, "Stock Quantity", productStockQuantityField);
         addField(panel, gbc, row++, "Brand", productBrandField);
         addField(panel, gbc, row++, "Reorder Level", productReorderLevelField);
-        addField(panel, gbc, row, "Location", productLocationField);
+        addField(panel, gbc, row, "Location", productLocationCombo);
 
         gbc.gridx = 0;
         gbc.gridy = row + 1;
@@ -106,6 +123,7 @@ public class InsertionPanel extends JPanel {
         insertProductButton.setFont(resolveFont(Font.BOLD, UI_FONT_SIZE, insertProductButton.getFont()));
         clearProductButton.setFont(resolveFont(Font.PLAIN, UI_FONT_SIZE, clearProductButton.getFont()));
         JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        actionPanel.setBackground(CARD_BG);
         actionPanel.add(insertProductButton);
         actionPanel.add(clearProductButton);
         panel.add(actionPanel, gbc);
@@ -118,48 +136,31 @@ public class InsertionPanel extends JPanel {
         Font sectionFont = resolveFont(Font.BOLD, SECTION_TITLE_SIZE, panel.getFont());
         if (panel.getBorder() instanceof javax.swing.border.TitledBorder titledBorder) {
             titledBorder.setTitleFont(sectionFont);
+            titledBorder.setTitleColor(TEXT_TITLE);
         }
     }
 
     private void styleButtons() {
-        stylePrimaryButton(insertCategoryButton, new Color(34, 122, 255), new Color(26, 94, 196));
+        stylePrimaryButton(insertCategoryButton, PRIMARY);
         styleSecondaryButton(clearCategoryButton);
-        stylePrimaryButton(insertProductButton, new Color(42, 167, 88), new Color(33, 130, 69));
+        styleSuccessButton(insertProductButton, SUCCESS);
         styleSecondaryButton(clearProductButton);
-        styleOutlineButton(generateBarcodeButton, new Color(112, 88, 208));
+        styleOutlineButton(generateBarcodeButton, PRIMARY);
     }
 
-    private void stylePrimaryButton(JButton button, Color background, Color border) {
-        button.setBackground(background);
-        button.setForeground(Color.WHITE);
-        button.setFocusPainted(false);
-        button.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(border),
-                new EmptyBorder(6, 14, 6, 14)
-        ));
-        button.setOpaque(true);
-    }
-
-    private void styleSecondaryButton(JButton button) {
-        button.setBackground(new Color(240, 240, 240));
-        button.setForeground(new Color(40, 40, 40));
-        button.setFocusPainted(false);
-        button.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(200, 200, 200)),
-                new EmptyBorder(6, 14, 6, 14)
-        ));
-        button.setOpaque(true);
-    }
-
-    private void styleOutlineButton(JButton button, Color border) {
-        button.setBackground(Color.WHITE);
-        button.setForeground(border.darker());
-        button.setFocusPainted(false);
-        button.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(border),
-                new EmptyBorder(6, 10, 6, 10)
-        ));
-        button.setOpaque(true);
+    private void styleInputs() {
+        styleInput(categoryNameField);
+        styleInput(categoryDescriptionField);
+        styleInput(productCategoryCombo);
+        styleInput(productSupplierCombo);
+        styleInput(productBarcodeField);
+        styleInput(productPartNameField);
+        styleInput(productCostPriceField);
+        styleInput(productSellingPriceField);
+        styleInput(productStockQuantityField);
+        styleInput(productBrandField);
+        styleInput(productReorderLevelField);
+        styleInput(productLocationCombo);
     }
 
     private void bindActions() {
@@ -196,21 +197,21 @@ public class InsertionPanel extends JPanel {
 
     private void insertProduct() {
         OptionItem categoryItem = (OptionItem) productCategoryCombo.getSelectedItem();
-        if (categoryItem == null || categoryItem.id == null) {
+        if (categoryItem == null || categoryItem.id() == null) {
             statusLabel.setText("Category is required.");
             return;
         }
         Integer supplierId = null;
         OptionItem supplierItem = (OptionItem) productSupplierCombo.getSelectedItem();
         if (supplierItem != null) {
-            supplierId = supplierItem.id;
+            supplierId = supplierItem.id();
         }
         String barcode = productBarcodeField.getText().trim();
         if (barcode.isEmpty()) {
             statusLabel.setText("Barcode is required.");
             return;
         }
-        if (Helper.barcodeExists(barcode)){
+        if (Helper.barcodeExists(barcode)) {
             statusLabel.setText("Barcode already exists. Please generate a new one.");
             return;
         }
@@ -232,10 +233,10 @@ public class InsertionPanel extends JPanel {
         if (reorderLevel == null) {
             return;
         }
-        String location = productLocationField.getText().trim();
+        String location = (String) productLocationCombo.getSelectedItem();
 
         Product product = new Product(
-                categoryItem.id,
+                categoryItem.id(),
                 supplierId,
                 barcode,
                 partName,
@@ -262,7 +263,7 @@ public class InsertionPanel extends JPanel {
         productStockQuantityField.setText("");
         productBrandField.setText("");
         productReorderLevelField.setText("");
-        productLocationField.setText("");
+        productLocationCombo.setSelectedIndex(0);
         statusLabel.setText(" ");
     }
 
@@ -282,6 +283,7 @@ public class InsertionPanel extends JPanel {
     private void addField(JPanel panel, GridBagConstraints gbc, int row, String labelText, JComponent field) {
         JLabel label = new JLabel(labelText + ":");
         label.setFont(resolveFont(Font.PLAIN, UI_FONT_SIZE, label.getFont()));
+        label.setForeground(TEXT_BODY);
         field.setFont(resolveFont(Font.PLAIN, UI_FONT_SIZE, field.getFont()));
 
         gbc.gridx = 0;
@@ -301,29 +303,17 @@ public class InsertionPanel extends JPanel {
 
     private DefaultComboBoxModel<OptionItem> buildOptions(String table, String idColumn, String nameColumn, String emptyLabel) {
         DefaultComboBoxModel<OptionItem> model = new DefaultComboBoxModel<>();
+        List<OptionItem> options = Main.getIdName(table, idColumn, nameColumn);
+
         model.addElement(new OptionItem(null, emptyLabel));
         try {
-            Constant.rsl = Constant.st.executeQuery(
-                    "SELECT " + idColumn + ", " + nameColumn + " FROM " + table + " ORDER BY " + nameColumn
-            );
-            while (Constant.rsl.next()) {
-                Integer id = Constant.rsl.getInt(1);
-                String name = Constant.rsl.getString(2);
-                model.addElement(new OptionItem(id, name));
-            }
-        } catch (SQLException e) {
+            for (OptionItem option : options)
+                model.addElement(option);
+        } catch (RuntimeException e) {
             statusLabel.setText("Failed to load " + table + " list: " + e.getMessage());
         }
         return model;
     }
-
-    private record OptionItem(Integer id, String label) {
-
-        @Override
-            public String toString() {
-                return label;
-            }
-        }
 
     private Integer parseRequiredInt(JTextField field, String label) {
         String value = field.getText().trim();
@@ -354,15 +344,12 @@ public class InsertionPanel extends JPanel {
     }
 
     private Font resolveFont(int style, float size, Font fallback) {
-        Font candidate = new Font(InsertionPanel.UI_FONT_FAMILY, style, Math.round(size));
-        if (candidate.getFamily().equalsIgnoreCase(InsertionPanel.UI_FONT_FAMILY)) {
-            return candidate.deriveFont(style, size);
-        }
-        return fallback.deriveFont(style, size);
+        return UiTheme.resolveFont(style, size, fallback);
     }
 
     private JComponent buildBarcodeField() {
         JPanel panel = new JPanel(new BorderLayout(6, 0));
+        panel.setBackground(CARD_BG);
         panel.add(productBarcodeField, BorderLayout.CENTER);
         generateBarcodeButton.setFont(resolveFont(Font.PLAIN, UI_FONT_SIZE, generateBarcodeButton.getFont()));
         panel.add(generateBarcodeButton, BorderLayout.EAST);
