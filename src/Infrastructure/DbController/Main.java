@@ -29,7 +29,8 @@ public class Main {
     }
 
     public static Object[][] getAll(String tableName, String condition) {
-        String sql = "SELECT * FROM " + tableName + " WHERE " + condition;
+        String primaryKeyColumn = Helper.getPrimaryKeyName(tableName);
+        String sql = "SELECT * FROM " + tableName + " WHERE " + condition + " ORDER BY " + primaryKeyColumn;    
 
         int rowsCount = Helper.getRowsNumber(tableName, condition);
         int columnsCount = Helper.getColumnsNumber(tableName);
@@ -102,9 +103,9 @@ public class Main {
         }
     }
 
-    public static String updateProduct(Product product, int productId) {
+    public static String updateProduct(Product product, int productId, boolean isActive) {
         String sql = "UPDATE products SET categoryid = ?, supplierid = ?, partname = ?, costprice = ?, sellingprice = ?, " +
-                "stockquantity = ?, brand = ?, reorderlevel = ?, location = ? WHERE productid = ?";
+                "stockquantity = ?, brand = ?, reorderlevel = ?, location = ?, isactive = ? WHERE productid = ?";
         try (PreparedStatement stmt = con.prepareStatement(sql)) {
             stmt.setInt(1, product.categoryid);
             if (product.supplierid == null) {
@@ -119,11 +120,12 @@ public class Main {
             stmt.setString(7, product.brand);
             stmt.setInt(8, product.reorderlevel);
             stmt.setString(9, product.location);
-            stmt.setInt(10, productId);
+            stmt.setBoolean(10, isActive);
+            stmt.setInt(11, productId);
 
             int rows = stmt.executeUpdate();
             if (rows > 0) {
-                return "SUCCESSFUL UPDATE FOR productid=" + productId + " (Rows affected: " + rows + ")";
+                return "SUCCESSFUL UPDATE FOR productid=" + productId;
             }
             return "No rows updated for productid=" + productId;
         } catch (SQLException e) {

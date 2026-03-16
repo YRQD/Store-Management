@@ -3,10 +3,7 @@ package Infrastructure.DbController;
 import static Infrastructure.DbController.Constant.*;
 
 import java.lang.reflect.Field;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 
 public class Helper {
 
@@ -73,6 +70,19 @@ public class Helper {
         }
     }
 
+    public static boolean existsInTable(String tableName, String columnName, String value) {
+        String sql = "SELECT 1 FROM " + tableName + " WHERE LOWER(" + columnName + ") = LOWER(?) LIMIT 1";
+        try (PreparedStatement stmt = con.prepareStatement(sql)) {
+            stmt.setString(1, value);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            System.out.println("Error in existsInTable: " + e.getMessage());
+            return false;
+        }
+    }
+
     public static boolean userExists(String username, String password) {
         String sql = "SELECT passwordhash FROM users WHERE username = ?";
         try (PreparedStatement stmt = con.prepareStatement(sql)) {
@@ -102,5 +112,19 @@ public class Helper {
         } catch (SQLException e) {
             return "Error in getUserPermission: " + e.getMessage();
         }
+    }
+
+    public static String getPrimaryKeyName(String tableName) {
+
+        try {
+            DatabaseMetaData metaData = con.getMetaData();
+            ResultSet rs = metaData.getPrimaryKeys(null, null, tableName.toLowerCase());
+
+            if (rs.next())
+                return rs.getString("COLUMN_NAME");
+        } catch (Exception e) {
+            System.out.println("Error in getPrimaryKeyName: " + e.getMessage());
+        }
+        return "1";
     }
 }

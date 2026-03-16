@@ -36,9 +36,11 @@ public class InsertionPanel extends JPanel {
     private final JButton clearCategoryButton = new JButton("Clear Category");
     private final JButton insertProductButton = new JButton("Insert Product");
     private final JButton clearProductButton = new JButton("Clear Product");
+    private final Runnable onCategoryInserted;
 
-    public InsertionPanel() {
+    public InsertionPanel(Runnable onCategoryInserted) {
         super(new BorderLayout(12, 12));
+        this.onCategoryInserted = onCategoryInserted;
         setBackground(APP_BG);
         buildLayout();
         styleButtons();
@@ -183,10 +185,19 @@ public class InsertionPanel extends JPanel {
             statusLabel.setText("Category name is required.");
             return;
         }
+        if (Helper.existsInTable("categories", "categoryname", name)) {
+            statusLabel.setText("Category already exists.");
+            return;
+        }
 
         Category category = new Category(name, description);
         String result = Main.insertInto(category, "categories");
         statusLabel.setText(result);
+        loadComboData();
+        clearCategoryFields();
+        if (onCategoryInserted != null) {
+            onCategoryInserted.run();
+        }
     }
 
     private void clearCategoryFields() {

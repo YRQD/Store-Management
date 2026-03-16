@@ -11,6 +11,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
+import javax.swing.table.TableModel;
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
@@ -72,7 +73,7 @@ public class TableViewerFrame extends JFrame {
         tabs.setFont(resolveFont(Font.BOLD, UI_FONT_SIZE, tabs.getFont()));
         tabs.addTab("Load Data", buildLoadPanel(defaultTable));
         if (isManager(role)) {
-            tabs.addTab("Insert Data", new InsertionPanel());
+            tabs.addTab("Insert Data", new InsertionPanel(this::refreshCategoryFilter));
         }
         styleTabs(tabs);
         return tabs;
@@ -173,15 +174,13 @@ public class TableViewerFrame extends JFrame {
         JLabel categoryLabel = buildTitleLabel("Category:");
         JLabel searchLabel = buildTitleLabel("Search:");
 
-        applyFontToComponents(Font.PLAIN, UI_FONT_SIZE,
+        applyFontToComponents(
                 tableNameCombo,
                 locationFilterCombo,
                 categoryFilterCombo,
                 searchField,
                 clearSearchButton
         );
-        loadButton.setFont(resolveFont(Font.BOLD, UI_FONT_SIZE, loadButton.getFont()));
-        printButton.setFont(resolveFont(Font.BOLD, UI_FONT_SIZE, printButton.getFont()));
         statusLabel.setFont(resolveFont(Font.PLAIN, UI_FONT_SIZE, statusLabel.getFont()));
         styleControls();
 
@@ -224,16 +223,10 @@ public class TableViewerFrame extends JFrame {
         searchField.setPreferredSize(new Dimension(200, 34));
         clearSearchButton.setPreferredSize(new Dimension(90, 34));
 
+        loadButton.setFont(resolveFont(Font.BOLD, UI_FONT_SIZE, loadButton.getFont()));
+        printButton.setFont(resolveFont(Font.BOLD, UI_FONT_SIZE, printButton.getFont()));
         styleSecondaryButton(clearSearchButton);
-
-        loadButton.setBackground(PRIMARY);
-        loadButton.setForeground(Color.WHITE);
-        loadButton.setFocusPainted(false);
-        loadButton.setBorder(new CompoundBorder(
-                new LineBorder(PRIMARY.darker()),
-                new EmptyBorder(6, 14, 6, 14)
-        ));
-        loadButton.setOpaque(true);
+        stylePrimaryButton(loadButton, PRIMARY);
 
         if (managerRole) {
             stylePrimaryButton(printButton, PRIMARY);
@@ -263,7 +256,6 @@ public class TableViewerFrame extends JFrame {
         }
 
         table.setDefaultRenderer(Object.class, new ZebraTableCellRenderer());
-        table.setDefaultRenderer(Number.class, new ZebraTableCellRenderer());
 
         table.addMouseMotionListener(new java.awt.event.MouseMotionAdapter() {
             @Override
@@ -406,6 +398,21 @@ public class TableViewerFrame extends JFrame {
         if (categoriesLoaded) {
             return;
         }
+        reloadCategoryFilter();
+    }
+
+    private void refreshCategoryFilter() {
+        categoriesLoaded = false;
+        reloadCategoryFilter();
+    }
+
+    private void reloadCategoryFilter() {
+        Integer selectedId = null;
+        Object selected = categoryFilterCombo.getSelectedItem();
+        if (selected instanceof Infrastructure.Entities.OptionItem option) {
+            selectedId = option.id();
+        }
+
         DefaultComboBoxModel<Infrastructure.Entities.OptionItem> model = new DefaultComboBoxModel<>();
         model.addElement(new Infrastructure.Entities.OptionItem(null, CATEGORY_ALL_LABEL));
         try {
@@ -414,6 +421,7 @@ public class TableViewerFrame extends JFrame {
                 model.addElement(option);
             }
             categoryFilterCombo.setModel(model);
+            selectOptionById(categoryFilterCombo, selectedId);
             categoriesLoaded = true;
         } catch (RuntimeException e) {
             statusLabel.setText("Failed to load categories list.");
@@ -681,7 +689,7 @@ public class TableViewerFrame extends JFrame {
         int modelRow = table.convertRowIndexToModel(viewRow);
         DefaultTableModel model = (DefaultTableModel) table.getModel();
 
-        Integer productId = parseRequiredIntCell(model, modelRow, "productid");
+        Integer productId = parseRequiredIntCell(model, modelRow);
         if (productId == null) {
             showWarning("productid column is required to update.");
             return;
@@ -704,7 +712,7 @@ public class TableViewerFrame extends JFrame {
                 result.reorderLevel(),
                 result.location()
         );
-        String updateResult = Main.updateProduct(product, productId);
+        String updateResult = Main.updateProduct(product, productId, result.isActive());
         statusLabel.setText(updateResult);
         loadTable();
     }
@@ -737,8 +745,11 @@ public class TableViewerFrame extends JFrame {
         if (locationValue != null && !locationValue.isBlank()) {
             locationCombo.setSelectedItem(locationValue);
         }
+        JCheckBox activeCheck = new JCheckBox("Active");
+        String activeValue = getCellValue(model, modelRow, "isactive");
+        activeCheck.setSelected(parseBoolean(activeValue));
 
-        applyFontToComponents(Font.PLAIN, UI_FONT_SIZE,
+        applyFontToComponents(
                 partNameField,
                 costPriceField,
                 sellingPriceField,
@@ -747,7 +758,8 @@ public class TableViewerFrame extends JFrame {
                 reorderLevelField,
                 categoryCombo,
                 supplierCombo,
-                locationCombo
+                locationCombo,
+                activeCheck
         );
         styleInput(categoryCombo);
         styleInput(supplierCombo);
@@ -758,6 +770,7 @@ public class TableViewerFrame extends JFrame {
         styleInput(brandField);
         styleInput(reorderLevelField);
         styleInput(locationCombo);
+        styleInput(activeCheck);
 
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBackground(CARD_BG);
@@ -778,7 +791,8 @@ public class TableViewerFrame extends JFrame {
         addDialogField(panel, gbc, row++, "Stock Quantity", stockQtyField);
         addDialogField(panel, gbc, row++, "Brand", brandField);
         addDialogField(panel, gbc, row++, "Reorder Level", reorderLevelField);
-        addDialogField(panel, gbc, row, "Location", locationCombo);
+        addDialogField(panel, gbc, row++, "Location", locationCombo);
+        addDialogField(panel, gbc, row, "Active", activeCheck);
 
         int result = JOptionPane.showConfirmDialog(
                 this,
@@ -822,6 +836,7 @@ public class TableViewerFrame extends JFrame {
             return null;
         }
         String location = (String) locationCombo.getSelectedItem();
+        boolean isActive = activeCheck.isSelected();
 
         return new ProductEditResult(
                 categoryItem.id(),
@@ -832,7 +847,8 @@ public class TableViewerFrame extends JFrame {
                 stockQty,
                 brand,
                 reorderLevel,
-                location
+                location,
+                isActive
         );
     }
 
@@ -892,7 +908,7 @@ public class TableViewerFrame extends JFrame {
         return label;
     }
 
-    private void applyFontToComponents(int style, float size, JComponent... components) {
+    private void applyFontToComponents(JComponent... components) {
         if (components == null) {
             return;
         }
@@ -900,7 +916,7 @@ public class TableViewerFrame extends JFrame {
             if (component == null) {
                 continue;
             }
-            component.setFont(resolveFont(style, size, component.getFont()));
+            component.setFont(resolveFont(Font.PLAIN, TableViewerFrame.UI_FONT_SIZE, component.getFont()));
         }
     }
 
@@ -920,17 +936,8 @@ public class TableViewerFrame extends JFrame {
         combo.setSelectedIndex(0);
     }
 
-    private String getCellValue(DefaultTableModel model, int row, String columnHint) {
-        int index = findColumnIndex(model, columnHint);
-        if (index < 0) {
-            return "";
-        }
-        Object value = model.getValueAt(row, index);
-        return value == null ? "" : value.toString();
-    }
-
-    private int findColumnIndex(DefaultTableModel model, String columnHint) {
-        if (columnHint == null || columnHint.isBlank()) {
+    private int findColumnIndex(TableModel model, String columnHint) {
+        if (columnHint == null || columnHint.isBlank() || model == null) {
             return -1;
         }
         String normalizedHint = normalizeColumnName(columnHint);
@@ -947,7 +954,23 @@ public class TableViewerFrame extends JFrame {
         return -1;
     }
 
+    private String getCellValue(DefaultTableModel model, int row, String columnHint) {
+        return getCellValue((TableModel) model, row, columnHint);
+    }
+
+    private String getCellValue(TableModel model, int row, String columnHint) {
+        int index = findColumnIndex(model, columnHint);
+        if (index < 0) {
+            return "";
+        }
+        Object value = model.getValueAt(row, index);
+        return value == null ? "" : value.toString();
+    }
+
     private String normalizeColumnName(String value) {
+        if (value == null) {
+            return "";
+        }
         return value.toLowerCase().replace("_", "").replace(" ", "").trim();
     }
 
@@ -963,8 +986,8 @@ public class TableViewerFrame extends JFrame {
         }
     }
 
-    private Integer parseRequiredIntCell(DefaultTableModel model, int row, String columnHint) {
-        String value = getCellValue(model, row, columnHint);
+    private Integer parseRequiredIntCell(DefaultTableModel model, int row) {
+        String value = getCellValue(model, row, "productid");
         if (value.isBlank()) {
             return null;
         }
@@ -1011,6 +1034,18 @@ public class TableViewerFrame extends JFrame {
                                      int stockQuantity,
                                      String brand,
                                      int reorderLevel,
-                                     String location) {
+                                     String location,
+                                     boolean isActive) {
+    }
+
+    private boolean parseBoolean(String value) {
+        if (value == null) {
+            return false;
+        }
+        String normalized = value.trim();
+        return normalized.equalsIgnoreCase("true")
+                || normalized.equalsIgnoreCase("t")
+                || normalized.equals("1")
+                || normalized.equalsIgnoreCase("yes");
     }
 }
