@@ -1,6 +1,8 @@
 package Infrastructure.DbController;
 
 import Infrastructure.Entities.OptionItem;
+import Infrastructure.Entities.Product;
+
 import static Infrastructure.DbController.Constant.*;
 
 import java.lang.reflect.Field;
@@ -9,6 +11,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.DriverManager;
 import java.sql.Statement;
+import java.sql.Types;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -96,6 +99,35 @@ public class Main {
             stmt.executeUpdate();
         } catch (SQLException e) {
             System.out.println("Error updating user login time: " + e.getMessage());
+        }
+    }
+
+    public static String updateProduct(Product product, int productId) {
+        String sql = "UPDATE products SET categoryid = ?, supplierid = ?, partname = ?, costprice = ?, sellingprice = ?, " +
+                "stockquantity = ?, brand = ?, reorderlevel = ?, location = ? WHERE productid = ?";
+        try (PreparedStatement stmt = con.prepareStatement(sql)) {
+            stmt.setInt(1, product.categoryid);
+            if (product.supplierid == null) {
+                stmt.setNull(2, Types.INTEGER);
+            } else {
+                stmt.setInt(2, product.supplierid);
+            }
+            stmt.setString(3, product.partname);
+            stmt.setFloat(4, product.costprice);
+            stmt.setFloat(5, product.sellingprice);
+            stmt.setInt(6, product.stockquantity);
+            stmt.setString(7, product.brand);
+            stmt.setInt(8, product.reorderlevel);
+            stmt.setString(9, product.location);
+            stmt.setInt(10, productId);
+
+            int rows = stmt.executeUpdate();
+            if (rows > 0) {
+                return "SUCCESSFUL UPDATE FOR productid=" + productId + " (Rows affected: " + rows + ")";
+            }
+            return "No rows updated for productid=" + productId;
+        } catch (SQLException e) {
+            return "ERROR: UPDATING PRODUCT " + e.getMessage();
         }
     }
 
