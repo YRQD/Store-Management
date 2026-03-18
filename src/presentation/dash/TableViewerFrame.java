@@ -55,6 +55,7 @@ public class TableViewerFrame extends JFrame {
     private final JScrollPane tableScrollPane = new JScrollPane(table);
     private final JLabel statusLabel = new JLabel(" ");
     private final Timer searchDebounceTimer = new Timer(300, _ -> executeSearch());
+    private static final int TOP_PANEL_STACK_PADDING = 32;
 
     public TableViewerFrame(String defaultTable, String role) {
         super("Store Management");
@@ -165,7 +166,7 @@ public class TableViewerFrame extends JFrame {
 
 
     private JPanel buildTopPanel(String defaultTable) {
-        JPanel topPanel = new JPanel(new BorderLayout());
+        JPanel topPanel = new JPanel();
         topPanel.setBackground(CARD_BG);
 
         JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -208,11 +209,42 @@ public class TableViewerFrame extends JFrame {
             rightPanel.add(editButton);
         }
 
-        topPanel.add(leftPanel, BorderLayout.WEST);
-        topPanel.add(rightPanel, BorderLayout.EAST);
+        configureTopPanelLayout(topPanel, leftPanel, rightPanel, true);
+        topPanel.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                updateTopPanelLayout(topPanel, leftPanel, rightPanel);
+            }
+        });
+
         updateFiltersState();
         updatePrintButtonState();
         return topPanel;
+    }
+
+    private void updateTopPanelLayout(JPanel topPanel, JPanel leftPanel, JPanel rightPanel) {
+        int requiredWidth = leftPanel.getPreferredSize().width + rightPanel.getPreferredSize().width + TOP_PANEL_STACK_PADDING;
+        boolean stackPanels = topPanel.getWidth() > 0 && topPanel.getWidth() < requiredWidth;
+        boolean currentlyStacked = Boolean.TRUE.equals(topPanel.getClientProperty("stacked"));
+        if (stackPanels != currentlyStacked) {
+            configureTopPanelLayout(topPanel, leftPanel, rightPanel, stackPanels);
+        }
+    }
+
+    private void configureTopPanelLayout(JPanel topPanel, JPanel leftPanel, JPanel rightPanel, boolean stackPanels) {
+        topPanel.removeAll();
+        if (stackPanels) {
+            topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
+            topPanel.add(leftPanel);
+            topPanel.add(rightPanel);
+        } else {
+            topPanel.setLayout(new BorderLayout());
+            topPanel.add(leftPanel, BorderLayout.WEST);
+            topPanel.add(rightPanel, BorderLayout.EAST);
+        }
+        topPanel.putClientProperty("stacked", stackPanels);
+        topPanel.revalidate();
+        topPanel.repaint();
     }
 
     private void styleControls() {
@@ -229,12 +261,13 @@ public class TableViewerFrame extends JFrame {
         loadButton.setFont(resolveFont(Font.BOLD, UI_FONT_SIZE, loadButton.getFont()));
         printButton.setFont(resolveFont(Font.BOLD, UI_FONT_SIZE, printButton.getFont()));
         backupButton.setFont(resolveFont(Font.BOLD, UI_FONT_SIZE, backupButton.getFont()));
+        editButton.setFont(resolveFont(Font.BOLD, UI_FONT_SIZE, editButton.getFont()));
         styleSecondaryButton(clearSearchButton);
         stylePrimaryButton(loadButton, PRIMARY);
-        stylePrimaryButton(backupButton, new Color(0x3B82F6));
+        stylePrimaryButton(backupButton, new Color(0x27AE60));
 
         if (managerRole) {
-            stylePrimaryButton(printButton, PRIMARY);
+            stylePrimaryButton(printButton, new Color(0x424242));
             stylePrimaryButton(editButton, new Color(0xF59E0B));
             printButton.setEnabled(false);
             editButton.setEnabled(false);
@@ -596,7 +629,7 @@ public class TableViewerFrame extends JFrame {
     }
 
     private void printSelectedProduct() {
-        if (!ensureProductsTableSelected("Please load the products table to print a barcode.")) {
+        if (ensureProductsTableSelected("Please load the products table to print a barcode.")) {
             return;
         }
         int viewRow = ensureRowSelected("Please select a product row first.");
@@ -624,10 +657,10 @@ public class TableViewerFrame extends JFrame {
 
     private boolean ensureProductsTableSelected(String message) {
         if (isProductsTableSelected()) {
-            return true;
+            return false;
         }
         showWarning(message);
-        return false;
+        return true;
     }
 
     private int ensureRowSelected(String message) {
@@ -640,7 +673,7 @@ public class TableViewerFrame extends JFrame {
     }
 
     private void editSelectedProduct() {
-        if (!ensureProductsTableSelected("Please load the products table to edit a product.")) {
+        if (ensureProductsTableSelected("Please load the products table to edit a product.")) {
             return;
         }
         int viewRow = ensureRowSelected("Please select a product row first.");
@@ -736,7 +769,7 @@ public class TableViewerFrame extends JFrame {
 
     private void showBackupDialog() {
         List<String> partitions = DatabaseConfig.getExistingPartitions();
-        if (partitions == null || partitions.isEmpty()) {
+        if (partitions.isEmpty()) {
             JOptionPane.showMessageDialog(this, "No partitions found!", "Backup Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
@@ -757,3 +790,4 @@ public class TableViewerFrame extends JFrame {
         }
     }
 }
+
