@@ -43,6 +43,10 @@ public final class Validators {
         }
     }
 
+    public static boolean isValidPhoneNumber(String phoneNumber) {
+        return phoneNumber.matches("^(010|011|012|015)\\d{8}$");
+    }
+
     private static void report(Consumer<String> onError, String message) {
         if (onError != null) {
             onError.accept(message);

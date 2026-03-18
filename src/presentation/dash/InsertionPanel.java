@@ -14,6 +14,8 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 import presentation.theme.UiTheme;
+import presentation.util.Validators;
+
 import static presentation.theme.UiTheme.*;
 import static presentation.theme.UiLayout.*;
 import static presentation.util.Validators.*;
@@ -44,12 +46,15 @@ public class InsertionPanel extends JPanel {
     private final JTextField supplierAddressField = new JTextField(18);
     private final JTextField supplierDescriptionField = new JTextField(18);
 
-    private final JButton insertCategoryButton = new JButton("Insert Category");
-    private final JButton clearCategoryButton = new JButton("Clear");
-    private final JButton insertProductButton = new JButton("Insert Product");
-    private final JButton clearProductButton = new JButton("Clear");
-    private final JButton insertSupplierButton = new JButton("Insert Supplier");
-    private final JButton clearSupplierButton = new JButton("Clear Supplier");
+    private final String INSERT_TEXT = "Insert";
+    private final String CLEAR_TEXT = "Clear";
+
+    private final JButton insertCategoryButton = new JButton(INSERT_TEXT);
+    private final JButton clearCategoryButton = new JButton(CLEAR_TEXT);
+    private final JButton insertProductButton = new JButton(INSERT_TEXT);
+    private final JButton clearProductButton = new JButton(CLEAR_TEXT);
+    private final JButton insertSupplierButton = new JButton(INSERT_TEXT);
+    private final JButton clearSupplierButton = new JButton(CLEAR_TEXT);
     private final Runnable onCategoryInserted;
 
     public InsertionPanel(Runnable onCategoryInserted) {
@@ -245,6 +250,18 @@ public class InsertionPanel extends JPanel {
         }
         if (SqlHelper.existsInTable("suppliers", "suppliername", name)) {
             statusLabel.setText("Supplier already exists.");
+            return;
+        }
+        String phoneNumber = supplierPhoneField.getText().trim();
+//        if (!phoneNumber.isEmpty()) {
+//            if (!Validators.isValidPhoneNumber(phoneNumber)) {
+//                statusLabel.setText("Invalid phone number format.");
+//                return;
+//            }
+//        }
+
+        if (!phoneNumber.isEmpty() && !Validators.isValidPhoneNumber(phoneNumber)) {
+            statusLabel.setText("Invalid phone number format.");
             return;
         }
 

@@ -42,7 +42,7 @@ public class TableViewerFrame extends JFrame {
     private boolean categoriesLoaded = false;
     private boolean managerRole = false;
 
-    private final JComboBox<String> tableNameCombo = new JComboBox<>(new String[] {"CATEGORIES", "PRODUCTS"});
+    private final JComboBox<String> tableNameCombo = new JComboBox<>(new String[] {"CATEGORIES", "PRODUCTS", "SUPPLIERS"});
     private final JComboBox<String> locationFilterCombo = new JComboBox<>(new String[] {LOCATION_ALL, LOCATION_SHOP, LOCATION_STORAGE});
     private final JComboBox<OptionItem> categoryFilterCombo = new JComboBox<>();
     private final JTextField searchField = new JTextField(16);
@@ -169,8 +169,17 @@ public class TableViewerFrame extends JFrame {
         JPanel topPanel = new JPanel();
         topPanel.setBackground(CARD_BG);
 
-        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel leftPanel = new JPanel();
         leftPanel.setBackground(CARD_BG);
+        leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
+
+        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        filterPanel.setBackground(CARD_BG);
+        filterPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        searchPanel.setBackground(CARD_BG);
+        searchPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JLabel tableLabel = buildTitleLabel("Table:", UI_FONT_SIZE);
         JLabel locationLabel = buildTitleLabel("Location:", UI_FONT_SIZE);
@@ -187,19 +196,23 @@ public class TableViewerFrame extends JFrame {
         statusLabel.setFont(resolveFont(Font.PLAIN, UI_FONT_SIZE, statusLabel.getFont()));
         styleControls();
 
-        leftPanel.add(tableLabel);
+        filterPanel.add(tableLabel);
         if (defaultTable != null && !defaultTable.isBlank()) {
             tableNameCombo.setSelectedItem(defaultTable);
         }
-        leftPanel.add(tableNameCombo);
-        leftPanel.add(locationLabel);
-        leftPanel.add(locationFilterCombo);
-        leftPanel.add(categoryLabel);
-        leftPanel.add(categoryFilterCombo);
-        leftPanel.add(searchLabel);
-        leftPanel.add(searchField);
-        leftPanel.add(clearSearchButton);
-        leftPanel.add(loadButton);
+        filterPanel.add(tableNameCombo);
+        filterPanel.add(locationLabel);
+        filterPanel.add(locationFilterCombo);
+        filterPanel.add(categoryLabel);
+        filterPanel.add(categoryFilterCombo);
+
+        searchPanel.add(searchLabel);
+        searchPanel.add(searchField);
+        searchPanel.add(clearSearchButton);
+        searchPanel.add(loadButton);
+
+        leftPanel.add(filterPanel);
+        leftPanel.add(searchPanel);
 
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         rightPanel.setBackground(CARD_BG);
