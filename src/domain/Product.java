@@ -1,4 +1,4 @@
-package Infrastructure.Entities;
+package domain;
 
 public class Product {
     public int categoryid;

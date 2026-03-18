@@ -1,4 +1,4 @@
-package Infrastructure.Entities;
+package domain;
 
 public class Category {
     public String categoryname;

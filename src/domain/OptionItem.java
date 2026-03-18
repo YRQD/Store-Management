@@ -1,4 +1,4 @@
-package Infrastructure.Entities;
+package domain;
 
 public record OptionItem(Integer id, String label) {
 

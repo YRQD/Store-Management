@@ -1,4 +1,4 @@
-package Infrastructure.DbController;
+package infrastructure.printing;
 
 import java.security.SecureRandom;
 import javax.print.*;
@@ -6,7 +6,7 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
-public class XPrinter {
+public class PrinterService {
 
     public static String generateRandomCode() {
         String ALLOWED_CHARACTERS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -81,3 +81,4 @@ public class XPrinter {
     }
 
 }
+

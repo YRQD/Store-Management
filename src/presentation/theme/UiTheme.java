@@ -1,4 +1,4 @@
-package Presentation;
+package presentation.theme;
 
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;

@@ -1,4 +1,4 @@
-package Infrastructure.DbController;
+package infrastructure.security;
 
 import org.mindrot.jbcrypt.BCrypt;
 
@@ -16,3 +16,4 @@ public class PasswordManager {
         }
     }
 }
+

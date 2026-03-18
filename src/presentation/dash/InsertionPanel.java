@@ -1,7 +1,10 @@
-package Presentation;
+package presentation.dash;
 
-import Infrastructure.DbController.*;
-import Infrastructure.Entities.*;
+import data.repository.SqlHelper;
+import data.repository.StoreRepository;
+import domain.Category;
+import domain.OptionItem;
+import domain.Product;
 
 import java.util.List;
 
@@ -9,7 +12,10 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
-import static Presentation.UiTheme.*;
+import presentation.theme.UiTheme;
+import static presentation.theme.UiTheme.*;
+import static presentation.theme.UiLayout.*;
+import static presentation.util.Validators.*;
 
 public class InsertionPanel extends JPanel {
     private static final float UI_FONT_SIZE = 16f;
@@ -64,25 +70,14 @@ public class InsertionPanel extends JPanel {
         add(statusLabel, BorderLayout.SOUTH);
     }
 
-    private JPanel wrapInCard(JPanel panel) {
-        JPanel card = new JPanel(new BorderLayout());
-        card.setBackground(CARD_BG);
-        card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(INPUT_BORDER),
-                new EmptyBorder(12, 12, 12, 12)
-        ));
-        card.add(panel, BorderLayout.CENTER);
-        return card;
-    }
-
     private JPanel buildCategoryPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBackground(CARD_BG);
         panel.setBorder(BorderFactory.createTitledBorder("Categories"));
 
         GridBagConstraints gbc = baseConstraints();
-        addField(panel, gbc, 0, "Name", categoryNameField);
-        addField(panel, gbc, 1, "Description", categoryDescriptionField);
+        addLabeledField(panel, gbc, 0, "Name", categoryNameField, UI_FONT_SIZE);
+        addLabeledField(panel, gbc, 1, "Description", categoryDescriptionField, UI_FONT_SIZE);
 
         gbc.gridx = 0;
         gbc.gridy = 2;
@@ -96,7 +91,7 @@ public class InsertionPanel extends JPanel {
         actionPanel.add(clearCategoryButton);
         panel.add(actionPanel, gbc);
 
-        applySectionFont(panel);
+        applySectionTitleFont(panel, SECTION_TITLE_SIZE);
         return panel;
     }
 
@@ -107,16 +102,16 @@ public class InsertionPanel extends JPanel {
 
         GridBagConstraints gbc = baseConstraints();
         int row = 0;
-        addField(panel, gbc, row++, "Category", productCategoryCombo);
-        addField(panel, gbc, row++, "Supplier", productSupplierCombo);
-        addField(panel, gbc, row++, "Barcode/SKU", buildBarcodeField());
-        addField(panel, gbc, row++, "Part Name", productPartNameField);
-        addField(panel, gbc, row++, "Cost Price", productCostPriceField);
-        addField(panel, gbc, row++, "Selling Price", productSellingPriceField);
-        addField(panel, gbc, row++, "Stock Quantity", productStockQuantityField);
-        addField(panel, gbc, row++, "Brand", productBrandField);
-        addField(panel, gbc, row++, "Reorder Level", productReorderLevelField);
-        addField(panel, gbc, row, "Location", productLocationCombo);
+        addLabeledField(panel, gbc, row++, "Category", productCategoryCombo, UI_FONT_SIZE);
+        addLabeledField(panel, gbc, row++, "Supplier", productSupplierCombo, UI_FONT_SIZE);
+        addLabeledField(panel, gbc, row++, "Barcode/SKU", buildBarcodeField(), UI_FONT_SIZE);
+        addLabeledField(panel, gbc, row++, "Part Name", productPartNameField, UI_FONT_SIZE);
+        addLabeledField(panel, gbc, row++, "Cost Price", productCostPriceField, UI_FONT_SIZE);
+        addLabeledField(panel, gbc, row++, "Selling Price", productSellingPriceField, UI_FONT_SIZE);
+        addLabeledField(panel, gbc, row++, "Stock Quantity", productStockQuantityField, UI_FONT_SIZE);
+        addLabeledField(panel, gbc, row++, "Brand", productBrandField, UI_FONT_SIZE);
+        addLabeledField(panel, gbc, row++, "Reorder Level", productReorderLevelField, UI_FONT_SIZE);
+        addLabeledField(panel, gbc, row, "Location", productLocationCombo, UI_FONT_SIZE);
 
         gbc.gridx = 0;
         gbc.gridy = row + 1;
@@ -130,16 +125,8 @@ public class InsertionPanel extends JPanel {
         actionPanel.add(clearProductButton);
         panel.add(actionPanel, gbc);
 
-        applySectionFont(panel);
+        applySectionTitleFont(panel, SECTION_TITLE_SIZE);
         return panel;
-    }
-
-    private void applySectionFont(JPanel panel) {
-        Font sectionFont = resolveFont(Font.BOLD, SECTION_TITLE_SIZE, panel.getFont());
-        if (panel.getBorder() instanceof javax.swing.border.TitledBorder titledBorder) {
-            titledBorder.setTitleFont(sectionFont);
-            titledBorder.setTitleColor(TEXT_TITLE);
-        }
     }
 
     private void styleButtons() {
@@ -174,7 +161,7 @@ public class InsertionPanel extends JPanel {
     }
 
     private void generateBarcode() {
-        String barcode = Infrastructure.DbController.XPrinter.generateRandomCode();
+        String barcode = infrastructure.printing.PrinterService.generateRandomCode();
         productBarcodeField.setText(barcode);
     }
 
@@ -185,16 +172,16 @@ public class InsertionPanel extends JPanel {
             statusLabel.setText("Category name is required.");
             return;
         }
-        if (Helper.existsInTable("categories", "categoryname", name)) {
+        if (SqlHelper.existsInTable("categories", "categoryname", name)) {
             statusLabel.setText("Category already exists.");
             return;
         }
 
         Category category = new Category(name, description);
-        String result = Main.insertInto(category, "categories");
-        statusLabel.setText(result);
+        String result = StoreRepository.insertInto(category, "categories");
         loadComboData();
         clearCategoryFields();
+        statusLabel.setText(result);
         if (onCategoryInserted != null) {
             onCategoryInserted.run();
         }
@@ -222,25 +209,25 @@ public class InsertionPanel extends JPanel {
             statusLabel.setText("Barcode is required.");
             return;
         }
-        if (Helper.barcodeExists(barcode)) {
+        if (SqlHelper.barcodeExists(barcode)) {
             statusLabel.setText("Barcode already exists. Please generate a new one.");
             return;
         }
         String partName = productPartNameField.getText().trim();
-        Float costPrice = parseRequiredFloat(productCostPriceField, "Cost Price");
+        Float costPrice = requireFloat(productCostPriceField.getText(), "Cost Price", statusLabel::setText);
         if (costPrice == null) {
             return;
         }
-        Float sellingPrice = parseRequiredFloat(productSellingPriceField, "Selling Price");
+        Float sellingPrice = requireFloat(productSellingPriceField.getText(), "Selling Price", statusLabel::setText);
         if (sellingPrice == null) {
             return;
         }
-        Integer stockQty = parseRequiredInt(productStockQuantityField, "Stock Quantity");
+        Integer stockQty = requireInt(productStockQuantityField.getText(), "Stock Quantity", statusLabel::setText);
         if (stockQty == null) {
             return;
         }
         String brand = productBrandField.getText().trim();
-        Integer reorderLevel = parseRequiredInt(productReorderLevelField, "Reorder Level");
+        Integer reorderLevel = requireInt(productReorderLevelField.getText(), "Reorder Level", statusLabel::setText);
         if (reorderLevel == null) {
             return;
         }
@@ -259,7 +246,7 @@ public class InsertionPanel extends JPanel {
                 location
         );
 
-        String result = Main.insertInto(product, "products");
+        String result = StoreRepository.insertInto(product, "PRODUCTS");
         productBarcodeField.setText("");
         statusLabel.setText(result);
     }
@@ -278,34 +265,6 @@ public class InsertionPanel extends JPanel {
         statusLabel.setText(" ");
     }
 
-    private GridBagConstraints baseConstraints() {
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(6, 6, 6, 6);
-        gbc.anchor = GridBagConstraints.LINE_START;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.weightx = 1.0;
-        return gbc;
-    }
-
-    private void addField(JPanel panel, GridBagConstraints gbc, int row, String labelText, JTextField field) {
-        addField(panel, gbc, row, labelText, (JComponent) field);
-    }
-
-    private void addField(JPanel panel, GridBagConstraints gbc, int row, String labelText, JComponent field) {
-        JLabel label = new JLabel(labelText + ":");
-        label.setFont(resolveFont(Font.PLAIN, UI_FONT_SIZE, label.getFont()));
-        label.setForeground(TEXT_BODY);
-        field.setFont(resolveFont(Font.PLAIN, UI_FONT_SIZE, field.getFont()));
-
-        gbc.gridx = 0;
-        gbc.gridy = row;
-        gbc.weightx = 0.4;
-        panel.add(label, gbc);
-
-        gbc.gridx = 1;
-        gbc.weightx = 0.6;
-        panel.add(field, gbc);
-    }
 
     private void loadComboData() {
         productCategoryCombo.setModel(buildOptions("categories", "categoryid", "categoryname", "Select category..."));
@@ -314,7 +273,7 @@ public class InsertionPanel extends JPanel {
 
     private DefaultComboBoxModel<OptionItem> buildOptions(String table, String idColumn, String nameColumn, String emptyLabel) {
         DefaultComboBoxModel<OptionItem> model = new DefaultComboBoxModel<>();
-        List<OptionItem> options = Main.getIdName(table, idColumn, nameColumn);
+        List<OptionItem> options = StoreRepository.getIdName(table, idColumn, nameColumn);
 
         model.addElement(new OptionItem(null, emptyLabel));
         try {
@@ -326,33 +285,6 @@ public class InsertionPanel extends JPanel {
         return model;
     }
 
-    private Integer parseRequiredInt(JTextField field, String label) {
-        String value = field.getText().trim();
-        if (value.isEmpty()) {
-            statusLabel.setText(label + " is required.");
-            return null;
-        }
-        try {
-            return Integer.parseInt(value);
-        } catch (NumberFormatException e) {
-            statusLabel.setText(label + " must be a number.");
-            return null;
-        }
-    }
-
-    private Float parseRequiredFloat(JTextField field, String label) {
-        String value = field.getText().trim();
-        if (value.isEmpty()) {
-            statusLabel.setText(label + " is required.");
-            return null;
-        }
-        try {
-            return Float.parseFloat(value);
-        } catch (NumberFormatException e) {
-            statusLabel.setText(label + " must be a number.");
-            return null;
-        }
-    }
 
     private Font resolveFont(int style, float size, Font fallback) {
         return UiTheme.resolveFont(style, size, fallback);

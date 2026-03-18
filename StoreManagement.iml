@@ -17,5 +17,6 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="library" name="h2-2.4.240" level="project" />
   </component>
 </module>

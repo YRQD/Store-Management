@@ -1,7 +1,8 @@
-package Presentation;
+package presentation.login;
 
-import Infrastructure.DbController.Helper;
-import Infrastructure.DbController.Main;
+import data.repository.SqlHelper;
+import data.repository.StoreRepository;
+import presentation.dash.TableViewerFrame;
 
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
@@ -9,7 +10,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import java.awt.*;
 
-import static Presentation.UiTheme.*;
+import static presentation.theme.UiTheme.*;
 
 public class LoginFrame extends JFrame {
     private static final float UI_FONT_SIZE = 16f;
@@ -121,18 +122,18 @@ public class LoginFrame extends JFrame {
             return;
         }
 
-        if (!Helper.userExists(username, password)) {
+        if (!SqlHelper.userExists(username, password)) {
             statusLabel.setText("Invalid username or password.");
             return;
         }
 
-        String role = Helper.getUserPermission(username);
+        String role = SqlHelper.getUserPermission(username);
         if (!isValidRole(role)) {
             statusLabel.setText("Access denied: role not allowed.");
             return;
         }
 
-        Main.updateUserLogin(username);
+        StoreRepository.updateUserLogin(username);
         SwingUtilities.invokeLater(() -> {
             TableViewerFrame frame = new TableViewerFrame(defaultTable, role);
             frame.setVisible(true);

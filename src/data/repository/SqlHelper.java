@@ -1,11 +1,12 @@
-package Infrastructure.DbController;
+package data.repository;
 
-import static Infrastructure.DbController.Constant.*;
+import infrastructure.security.PasswordManager;
 
 import java.lang.reflect.Field;
 import java.sql.*;
+import static infrastructure.persistence.DatabaseConnection.con;
 
-public class Helper {
+public class SqlHelper {
 
     public static int getRowsNumber(String tableName, String condition) {
         String sql = "SELECT COUNT(*) FROM " + tableName + " WHERE " + condition;
@@ -32,7 +33,7 @@ public class Helper {
         String sql = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '" + tableName + "' ORDER BY ORDINAL_POSITION;";
         try (Statement stmt = con.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
             for (int i = 0; rs.next(); i++)
-                columnsNames[i] = rs.getString(1).toUpperCase();
+                columnsNames[i] = rs.getString(1);
             return columnsNames;
         } catch (SQLException e) {
             System.out.println("Error in getColumnsNames: " + e.getMessage());
@@ -128,3 +129,4 @@ public class Helper {
         return "1";
     }
 }
+

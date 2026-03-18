@@ -1,39 +1,23 @@
-package Infrastructure.DbController;
+package data.repository;
 
-import Infrastructure.Entities.OptionItem;
-import Infrastructure.Entities.Product;
-
-import static Infrastructure.DbController.Constant.*;
+import domain.OptionItem;
+import domain.Product;
+import static infrastructure.persistence.DatabaseConnection.con;
 
 import java.lang.reflect.Field;
-import java.sql.SQLException;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.DriverManager;
-import java.sql.Statement;
-import java.sql.Types;
+import java.sql.*;
 
 import java.util.List;
 import java.util.ArrayList;
 
-public class Main {
-
-    public static void startConnection() {
-        try {
-            con = DriverManager.getConnection(url, user, password);
-            System.out.println("Connection to the database established successfully.");
-        } catch (SQLException e) {
-            System.out.println(url);
-            System.exit(0);
-        }
-    }
+public class StoreRepository {
 
     public static Object[][] getAll(String tableName, String condition) {
-        String primaryKeyColumn = Helper.getPrimaryKeyName(tableName);
-        String sql = "SELECT * FROM " + tableName + " WHERE " + condition + " ORDER BY " + primaryKeyColumn;    
+        String primaryKeyColumn = SqlHelper.getPrimaryKeyName(tableName);
+        String sql = "SELECT * FROM " + tableName + " WHERE " + condition + " ORDER BY " + primaryKeyColumn;
 
-        int rowsCount = Helper.getRowsNumber(tableName, condition);
-        int columnsCount = Helper.getColumnsNumber(tableName);
+        int rowsCount = SqlHelper.getRowsNumber(tableName, condition);
+        int columnsCount = SqlHelper.getColumnsNumber(tableName);
 
         if (rowsCount < 0 || columnsCount < 0)
             return new Object[0][0];
@@ -68,7 +52,7 @@ public class Main {
 
     public static String insertInto(Object object, String tableName) {
         Field[] fields = object.getClass().getFields();
-        String sql = "INSERT INTO " + tableName + '(' + Helper.columnsPart(fields) + ")VALUES(" + Helper.questionMarksPart(fields) + ')';
+        String sql = "INSERT INTO " + tableName + '(' + SqlHelper.columnsPart(fields) + ")VALUES(" + SqlHelper.questionMarksPart(fields) + ')';
 
         try (PreparedStatement stmt = con.prepareStatement(sql)) {
             for (int i = 0; i < fields.length; i++) {
@@ -94,7 +78,7 @@ public class Main {
     }
 
     public static void updateUserLogin(String username) {
-        String sql = "UPDATE users SET lastlogin = CURRENT_TIMESTAMP WHERE username = ?";
+        String sql = "UPDATE users SET LASTLOGIN = CURRENT_TIMESTAMP WHERE USERNAME = ?";
         try (PreparedStatement stmt = con.prepareStatement(sql)) {
             stmt.setString(1, username);
             stmt.executeUpdate();
@@ -132,13 +116,5 @@ public class Main {
             return "ERROR: UPDATING PRODUCT " + e.getMessage();
         }
     }
-
-    public static void closeConnection() {
-        try {
-            if (con != null) con.close();
-            System.out.println("Database resources closed successfully.");
-        } catch (SQLException e) {
-            System.out.println("Error closing database resources: " + e.getMessage());
-        }
-    }
 }
+
