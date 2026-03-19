@@ -11,7 +11,6 @@ out/
 .idea/**/usage.statistics.xml
 .idea/**/shelf/
 .idea/**/copilot*.xml
-META-INF/
 ### Eclipse ###
 .apt_generated
 .classpath
