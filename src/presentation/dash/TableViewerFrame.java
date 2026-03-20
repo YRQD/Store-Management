@@ -7,6 +7,9 @@ import data.repository.SqlHelper;
 import data.repository.StoreRepository;
 import domain.Product;
 import domain.OptionItem;
+import domain.TableResult;
+import domain.PrintOptions;
+import domain.ProductEditResult;
 
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
@@ -31,7 +34,7 @@ public class TableViewerFrame extends JFrame {
     private static final float UI_FONT_SIZE = 16f;
     private static final float TABLE_FONT_SIZE = 16f;
     private static final float HEADER_FONT_SIZE = 16f;
-    private static final int MAX_WIDTH_SCAN_ROWS = 200;
+    private static final int MAX_WIDTH_SCAN_ROWS = 50;
 
     private static final String LOCATION_ALL = "All";
     private static final String LOCATION_SHOP = "Shop";
@@ -276,6 +279,13 @@ public class TableViewerFrame extends JFrame {
         printButton.setFont(resolveFont(Font.BOLD, UI_FONT_SIZE, printButton.getFont()));
         backupButton.setFont(resolveFont(Font.BOLD, UI_FONT_SIZE, backupButton.getFont()));
         editButton.setFont(resolveFont(Font.BOLD, UI_FONT_SIZE, editButton.getFont()));
+
+        Dimension actionButtonSize = new Dimension(100, 34);
+        loadButton.setPreferredSize(actionButtonSize);
+        printButton.setPreferredSize(actionButtonSize);
+        backupButton.setPreferredSize(actionButtonSize);
+        editButton.setPreferredSize(actionButtonSize);
+
         styleSecondaryButton(clearSearchButton);
         stylePrimaryButton(loadButton, PRIMARY);
         stylePrimaryButton(backupButton, new Color(0x27AE60));
@@ -532,17 +542,36 @@ public class TableViewerFrame extends JFrame {
         }
 
         String condition = buildCondition(tableName);
-        Object[][] data = StoreRepository.getAll(tableName, condition);
-        String[] columns = SqlHelper.getColumnsNames(tableName);
+        loadButton.setEnabled(false);
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        statusLabel.setText("Loading " + tableName + "...");
 
-        if (columns == null || columns.length == 0) {
-            statusLabel.setText("No columns found or table not accessible: " + tableName);
-            table.setModel(new DefaultTableModel());
-            updatePrintButtonState();
-            return;
-        }
+        new SwingWorker<TableResult, Void>() {
+            @Override
+            protected TableResult doInBackground() {
+                return StoreRepository.getAllWithColumns(tableName, condition);
+            }
 
-        applyTableModel(data, columns, tableName);
+            @Override
+            protected void done() {
+                loadButton.setEnabled(true);
+                setCursor(Cursor.getDefaultCursor());
+                try {
+                    TableResult result = get();
+                    if (result.columns() == null || result.columns().length == 0) {
+                        statusLabel.setText("No columns found or table not accessible: " + tableName);
+                        table.setModel(new DefaultTableModel());
+                        updatePrintButtonState();
+                        return;
+                    }
+
+                    applyTableModel(result.data(), result.columns(), tableName);
+                } catch (Exception e) {
+                    statusLabel.setText("Error loading data: " + e.getMessage());
+                    System.out.println("Error loading table data: " + e.getMessage());
+                }
+            }
+        }.execute();
     }
 
     private String buildCondition(String tableName) {
@@ -576,6 +605,7 @@ public class TableViewerFrame extends JFrame {
         int scanRows = Math.min(rowCount, MAX_WIDTH_SCAN_ROWS);
         for (int col = 0; col < columnCount; col++) {
             int preferredWidth = preferredWidthForColumn(col, scanRows);
+            preferredWidth = Math.min(preferredWidth, 300); // Max width cap
             TableColumn column = table.getColumnModel().getColumn(col);
             column.setPreferredWidth(preferredWidth);
         }
@@ -589,8 +619,15 @@ public class TableViewerFrame extends JFrame {
             if (value == null) {
                 continue;
             }
+            if (value instanceof String s && s.length() > 50) {
+                value = s.substring(0, 50) + "...";
+            }
             int cellWidth = cellPreferredWidth(row, columnIndex, value);
             maxWidth = Math.max(maxWidth, cellWidth);
+            if (maxWidth >= 300) {
+                maxWidth = 300;
+                break;
+            }
         }
 
         return maxWidth + 16;
@@ -660,7 +697,7 @@ public class TableViewerFrame extends JFrame {
             showWarning("Selected row does not contain a barcode.");
             return;
         }
-        TableViewDialogs.PrintOptions options = TableViewDialogs.showPrintOptionsDialog(this, UI_FONT_SIZE);
+        PrintOptions options = TableViewDialogs.showPrintOptionsDialog(this, UI_FONT_SIZE);
         if (options == null) {
             return;
         }
@@ -718,7 +755,7 @@ public class TableViewerFrame extends JFrame {
         Integer supplierId = TableViewUtils.parseOptionalIntCell(model, modelRow, "supplierid");
         selectOptionById(supplierCombo, supplierId);
 
-        TableViewDialogs.ProductEditResult result = TableViewDialogs.showEditProductDialog(
+        ProductEditResult result = TableViewDialogs.showEditProductDialog(
                 this,
                 model,
                 modelRow,

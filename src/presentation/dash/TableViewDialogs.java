@@ -1,8 +1,11 @@
 package presentation.dash;
 
 import domain.OptionItem;
+import domain.PrintOptions;
+import domain.ProductEditResult;
 import presentation.theme.UiTheme;
 import data.repository.SqlHelper;
+import presentation.util.Validators;
 
 import javax.swing.*;
 import javax.swing.border.LineBorder;
@@ -236,6 +239,16 @@ public final class TableViewDialogs {
             JTextField field = (JTextField) entry.getValue();
             String textValue = field.getText().trim();
 
+            if (columnName.contains("NAME") && textValue.isEmpty()) {
+                showWarning(parent, columnName + " cannot be empty.");
+                return null;
+            }
+
+            if (columnName.contains("PHONE") && !textValue.isEmpty() && !Validators.isValidPhoneNumber(textValue)) {
+                showWarning(parent, "Invalid phone number format for " + columnName + ".");
+                return null;
+            }
+
             Integer sqlType = columnTypes.get(columnName);
             if (sqlType == null) {
                 updates.put(columnName, textValue.isEmpty() ? null : textValue);
@@ -295,20 +308,4 @@ public final class TableViewDialogs {
         field.setFont(UiTheme.resolveFont(Font.PLAIN, fontSize, field.getFont()));
         return field;
     }
-
-    public record PrintOptions(int copies, boolean evenLabel) {
-    }
-
-    public record ProductEditResult(int categoryId,
-                                    Integer supplierId,
-                                    String partName,
-                                    float costPrice,
-                                    float sellingPrice,
-                                    int stockQuantity,
-                                    String brand,
-                                    int reorderLevel,
-                                    String location,
-                                    boolean isActive) {
-    }
 }
-

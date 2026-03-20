@@ -14,38 +14,6 @@ import static infrastructure.persistence.DatabaseConnection.con;
 
 public class SqlHelper {
 
-    public static int getRowsNumber(String tableName, String condition) {
-        String sql = "SELECT COUNT(*) FROM " + tableName + " WHERE " + condition;
-        try (Statement stmt = con.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
-            rs.next();
-            return rs.getInt(1);
-        } catch (SQLException e) {
-            return -1;
-        }
-    }
-
-    public static int getColumnsNumber(String tableName) {
-        String sql = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '" + tableName + "'";
-        try (Statement stmt = con.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
-            rs.next();
-            return rs.getInt(1);
-        } catch (SQLException e) {
-            return -1;
-        }
-    }
-
-    public static String[] getColumnsNames(String tableName) {
-        String[] columnsNames = new String[getColumnsNumber(tableName)];
-        String sql = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '" + tableName + "' ORDER BY ORDINAL_POSITION;";
-        try (Statement stmt = con.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
-            for (int i = 0; rs.next(); i++)
-                columnsNames[i] = rs.getString(1);
-            return columnsNames;
-        } catch (SQLException e) {
-            System.out.println("Error in getColumnsNames: " + e.getMessage());
-            return null;
-        }
-    }
 
     public static StringBuilder columnsPart(Field[] fields) {
         StringBuilder columnsPart = new StringBuilder();
@@ -125,54 +93,31 @@ public class SqlHelper {
         if (tableName == null || tableName.isBlank()) {
             return "1";
         }
-        try {
-            DatabaseMetaData metaData = con.getMetaData();
-            String pk = readPrimaryKey(metaData, tableName);
-            if (pk != null) {
-                return pk;
+
+        String upperName = tableName.toUpperCase();
+        switch (upperName) {
+            case "CATEGORIES" -> {
+                return "CATEGORYID";
             }
-            pk = readPrimaryKey(metaData, tableName.toLowerCase());
-            if (pk != null) {
-                return pk;
+            case "SUPPLIERS" -> {
+                return "SUPPLIERID";
             }
-            pk = readPrimaryKey(metaData, tableName.toUpperCase());
-            if (pk != null) {
-                return pk;
+            case "PRODUCTS" -> {
+                return "PRODUCTID";
+            }
+            case "USERS" -> {
+                return "USERID";
+            }
+        }
+
+        try (ResultSet rs = con.getMetaData().getPrimaryKeys(null, null, upperName)) {
+            if (rs.next()) {
+                return rs.getString("COLUMN_NAME");
             }
         } catch (Exception e) {
             System.out.println("Error in getPrimaryKeyName: " + e.getMessage());
         }
-
-        String fallback = readPrimaryKeyFromInformationSchema(tableName);
-        if (fallback != null) {
-            return fallback;
-        }
         return "1";
-    }
-
-    private static String readPrimaryKey(DatabaseMetaData metaData, String tableName) throws SQLException {
-        try (ResultSet rs = metaData.getPrimaryKeys(null, null, tableName)) {
-            if (rs.next()) {
-                return rs.getString("COLUMN_NAME");
-            }
-        }
-        return null;
-    }
-
-    private static String readPrimaryKeyFromInformationSchema(String tableName) {
-        String sql = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE " +
-                "WHERE TABLE_NAME = ? AND CONSTRAINT_NAME = 'PRIMARY'";
-        try (PreparedStatement stmt = con.prepareStatement(sql)) {
-            stmt.setString(1, tableName);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getString(1);
-                }
-            }
-        } catch (SQLException e) {
-            System.out.println("Error in getPrimaryKeyName fallback: " + e.getMessage());
-        }
-        return null;
     }
 
     public static void bindValue(PreparedStatement stmt, int index, Object value) throws SQLException {

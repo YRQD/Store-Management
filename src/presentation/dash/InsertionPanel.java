@@ -253,13 +253,6 @@ public class InsertionPanel extends JPanel {
             return;
         }
         String phoneNumber = supplierPhoneField.getText().trim();
-//        if (!phoneNumber.isEmpty()) {
-//            if (!Validators.isValidPhoneNumber(phoneNumber)) {
-//                statusLabel.setText("Invalid phone number format.");
-//                return;
-//            }
-//        }
-
         if (!phoneNumber.isEmpty() && !Validators.isValidPhoneNumber(phoneNumber)) {
             statusLabel.setText("Invalid phone number format.");
             return;

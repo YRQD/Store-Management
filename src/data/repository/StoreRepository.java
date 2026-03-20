@@ -2,42 +2,50 @@ package data.repository;
 
 import domain.OptionItem;
 import domain.Product;
+import domain.TableResult;
+
 import static infrastructure.persistence.DatabaseConnection.con;
 
 import java.lang.reflect.Field;
 import java.sql.*;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
 public class StoreRepository {
 
-    public static Object[][] getAll(String tableName, String condition) {
+    public static TableResult getAllWithColumns(String tableName, String condition) {
         String primaryKeyColumn = SqlHelper.getPrimaryKeyName(tableName);
         String sql = "SELECT * FROM " + tableName + " WHERE " + condition + " ORDER BY " + primaryKeyColumn;
 
-        int rowsCount = SqlHelper.getRowsNumber(tableName, condition);
-        int columnsCount = SqlHelper.getColumnsNumber(tableName);
+        List<Object[]> rows = new ArrayList<>();
+        String[] columns;
 
-        if (rowsCount < 0 || columnsCount < 0)
-            return new Object[0][0];
-
-        Object[][] data = new Object[rowsCount][columnsCount];
-        int j = 0;
         try (Statement stmt = con.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+            ResultSetMetaData metaData = rs.getMetaData();
+            int columnsCount = metaData.getColumnCount();
+
+            columns = new String[columnsCount];
+            for (int i = 0; i < columnsCount; i++) {
+                columns[i] = metaData.getColumnName(i + 1);
+            }
+
             while (rs.next()) {
+                Object[] row = new Object[columnsCount];
                 for (int i = 0; i < columnsCount; i++) {
-                    data[j][i] = rs.getString(i + 1);
+                    row[i] = rs.getObject(i + 1);
                 }
-                j++;
+                rows.add(row);
             }
         } catch (SQLException e) {
-            System.out.println("Error in getAll: " + e.getMessage());
+            System.out.println("Error in getAllWithColumns: " + e.getMessage());
+            return new TableResult(new Object[0][0], new String[0]);
         }
-        return data;
+
+        Object[][] data = new Object[rows.size()][columns.length];
+        return new TableResult(rows.toArray(data), columns);
     }
 
     public static List<OptionItem> getIdName(String tableName, String idColumn, String nameColumn) {
@@ -123,17 +131,13 @@ public class StoreRepository {
         if (pkColumn.isBlank() || "1".equals(pkColumn))
             return false;
 
-        Map<String, Object> updates = new LinkedHashMap<>(updateData);
-        updates.remove(pkColumn);
-        if (updates.isEmpty())
-            return false;
-
-        List<String> columns = new ArrayList<>(updates.keySet());
+        List<String> columns = new ArrayList<>(updateData.keySet());
         String sql = SqlHelper.prepareUpdateSql(tableName, new LinkedHashSet<>(columns), pkColumn);
+        updateData.remove(pkColumn);
 
         try (PreparedStatement stmt = con.prepareStatement(sql)) {
             int index = 1;
-            for (Object value : updates.values())
+            for (Object value : updateData.values())
                 SqlHelper.bindValue(stmt, index++, value);
             SqlHelper.bindValue(stmt, index, pkValue);
 
