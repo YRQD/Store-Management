@@ -1,6 +1,6 @@
 <configuration>
 
-    <property name="LOG_DIR" value="${MY_APP_ROOT:-./Store_Data}/logs" />
+    <property name="LOG_DIR" value="${MY_APP_PATH:-./Store_Data}/logs" />
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>

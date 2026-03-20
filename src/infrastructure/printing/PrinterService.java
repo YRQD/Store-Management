@@ -76,6 +76,7 @@ public class PrinterService {
             return "TSPL command sent successfully to " + myPrinter.getName();
 
         } catch (PrintException e) {
+            org.slf4j.LoggerFactory.getLogger(PrinterService.class).error("Failed to send print job: {}", e.getMessage());
             return "Failed to send print job: " + e.getMessage();
         }
     }

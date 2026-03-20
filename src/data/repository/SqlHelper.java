@@ -1,6 +1,8 @@
 package data.repository;
 
 import infrastructure.security.PasswordManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
 import java.sql.*;
@@ -15,6 +17,7 @@ import static infrastructure.persistence.DatabaseConnection.con;
 
 public class SqlHelper {
 
+    private static final Logger log = LoggerFactory.getLogger(SqlHelper.class);
 
     public static StringBuilder columnsPart(Field[] fields) {
         StringBuilder columnsPart = new StringBuilder();
@@ -41,7 +44,7 @@ public class SqlHelper {
                 return rs.next();
             }
         } catch (SQLException e) {
-            System.out.println("Error in barcodeExists: " + e.getMessage());
+            log.error("Error in barcodeExists: {}", e.getMessage());
             return false;
         }
     }
@@ -54,7 +57,7 @@ public class SqlHelper {
                 return rs.next();
             }
         } catch (SQLException e) {
-            System.out.println("Error in existsInTable: " + e.getMessage());
+            log.error("Error in existsInTable: {}", e.getMessage());
             return false;
         }
     }
@@ -68,9 +71,11 @@ public class SqlHelper {
                     String hashedPasswordFromDB = rs.getString(1);
                     return PasswordManager.verifyPassword(password, hashedPasswordFromDB);
                 }
+                log.warn("User: {} attempted to login with Password: {}", username, password);
                 return false;
             }
         } catch (SQLException e) {
+            log.error("Error in userExists: {}", e.getMessage());
             return false;
         }
     }
@@ -86,6 +91,7 @@ public class SqlHelper {
                 return "No permission found for user: " + username;
             }
         } catch (SQLException e) {
+            log.error("Error in getUserPermission: {}", e.getMessage());
             return "Error in getUserPermission: " + e.getMessage();
         }
     }
@@ -116,7 +122,7 @@ public class SqlHelper {
                 return rs.getString("COLUMN_NAME");
             }
         } catch (Exception e) {
-            System.out.println("Error in getPrimaryKeyName: " + e.getMessage());
+            log.error("Failed to getPrimaryKeyName: {}", e.getMessage());
         }
         return "1";
     }
@@ -148,7 +154,7 @@ public class SqlHelper {
                 }
             }
         } catch (SQLException e) {
-            System.out.println("Error in getColumnTypes: " + e.getMessage());
+            log.error("Filed to getColumnTypes: {}", e.getMessage());
         }
         return types;
     }

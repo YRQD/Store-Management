@@ -4,6 +4,7 @@ import domain.OptionItem;
 import domain.Product;
 import domain.TableResult;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static infrastructure.persistence.DatabaseConnection.con;
 
@@ -16,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 
 public class StoreRepository {
+
+    private static final Logger log = LoggerFactory.getLogger(StoreRepository.class);
 
     public static TableResult getAllWithColumns(String tableName, String condition) {
         String primaryKeyColumn = SqlHelper.getPrimaryKeyName(tableName);
@@ -41,15 +44,11 @@ public class StoreRepository {
                 rows.add(row);
             }
         } catch (SQLException e) {
-//            System.out.println("Error in getAllWithColumns: " + e.getMessage());
-            Logger log = org.slf4j.LoggerFactory.getLogger(StoreRepository.class);
-            log.error("Error in getAllWithColumns: {}", e.getMessage());
+            log.error("Failed to getAllWithColumns: {}", e.getMessage());
             return new TableResult(new Object[0][0], new String[0]);
         }
 
         Object[][] data = new Object[rows.size()][columns.length];
-        Logger log = org.slf4j.LoggerFactory.getLogger(StoreRepository.class);
-        log.info("Successfully retrieved data from table: {} with condition: {}", tableName, condition);
         return new TableResult(rows.toArray(data), columns);
     }
 
@@ -61,7 +60,7 @@ public class StoreRepository {
                 options.add(new OptionItem(rs.getInt(1), rs.getString(2)));
             return options;
         } catch (SQLException e) {
-            System.out.println(e.getMessage());
+            log.error("Failed to getIdName: {}", e.getMessage());
             throw new RuntimeException();
         }
     }
@@ -81,9 +80,11 @@ public class StoreRepository {
             stmt.execute();
 
         } catch (SQLException e) {
-            return "ERROR: INSERTING INTO ".concat(tableName).concat(e.getMessage());
+            log.error("Failed to insertInto: {}", e.getMessage());
+            return "ERROR: INSERTING INTO ".concat(tableName);
         } catch (IllegalAccessException e) {
-            return "ERROR: ACCESSING FIELDS OF THE OBJECT: ".concat(e.getMessage());
+            log.error("Failed to access fields in insertInto: {}", e.getMessage());
+            return "ERROR: ACCESSING FIELDS OF THE OBJECT: ";
         }
         return ("SUCCESSFUL INSERT INTO ".concat(tableName));
     }
@@ -93,8 +94,9 @@ public class StoreRepository {
         try (PreparedStatement stmt = con.prepareStatement(sql)) {
             stmt.setString(1, username);
             stmt.executeUpdate();
+            log.info("INFO: {} last login time: {}", username, new Timestamp(System.currentTimeMillis()));
         } catch (SQLException e) {
-            System.out.println("Error updating user login time: " + e.getMessage());
+            log.error("ERROR: Failed to update user login time for {}: {}", username, e.getMessage());
         }
     }
 
@@ -120,21 +122,28 @@ public class StoreRepository {
 
             int rows = stmt.executeUpdate();
             if (rows > 0) {
+                log.info("Product with ID {} updated successfully.", productId);
                 return "SUCCESSFUL UPDATE FOR productid=" + productId;
             }
-            return "No rows updated for productid=" + productId;
+            log.warn("No rows updated for productid={}", productId);
+            return "WARN: No rows updated for productid=" + productId;
         } catch (SQLException e) {
+            log.error("Failed to update product with ID {}: {}", productId, e.getMessage());
             return "ERROR: UPDATING PRODUCT " + e.getMessage();
         }
     }
 
-    public static boolean update(String tableName, Map<String, Object> updateData, Object pkValue) {
-        if (updateData == null || updateData.isEmpty() || pkValue == null)
-            return false;
+    public static String update(String tableName, Map<String, Object> updateData, Object pkValue) {
+        if (updateData == null || updateData.isEmpty() || pkValue == null) {
+            log.error("Invalid update parameters: updateData is null or empty, or pkValue is null.");
+            return "ERROR: No data provided for update or primary key value is null.";
+        }
 
         String pkColumn = SqlHelper.getPrimaryKeyName(tableName);
-        if (pkColumn.isBlank() || "1".equals(pkColumn))
-            return false;
+        if (pkColumn.isBlank() || "1".equals(pkColumn)) {
+            log.error("Unable to determine primary key for table {}. Received pkColumn: '{}'", tableName, pkColumn);
+            return "ERROR: Unable to determine primary key for table " + tableName;
+        }
 
         List<String> columns = new ArrayList<>(updateData.keySet());
         String sql = SqlHelper.prepareUpdateSql(tableName, new LinkedHashSet<>(columns), pkColumn);
@@ -146,10 +155,17 @@ public class StoreRepository {
                 SqlHelper.bindValue(stmt, index++, value);
             SqlHelper.bindValue(stmt, index, pkValue);
 
-            return stmt.executeUpdate() > 0;
+            if (stmt.executeUpdate() > 0) {
+                return "SUCCESSFUL UPDATE FOR " + tableName + " WITH " + pkColumn + "=" + pkValue;
+            } else {
+                log.warn("No rows updated for table {} with primary key value {}", tableName, pkValue);
+                return "NO ROW UPDATED FOR " + tableName + " WITH " + pkColumn + "=" + pkValue;
+            }
+
         } catch (SQLException e) {
             System.err.println("Error updating table: " + tableName);
-            return false;
+            log.error("Failed to update table {}: {}", tableName, e.getMessage());
+            return "ERROR: UPDATING TABLE " + tableName + " WITH " + pkColumn + "=" + pkValue;
         }
     }
 }

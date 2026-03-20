@@ -832,8 +832,8 @@ public class TableViewerFrame extends JFrame {
             return;
         }
 
-        boolean updated = StoreRepository.update(tableName, updates, pkValue);
-        statusLabel.setText(updated ? "Update successful." : "Update failed.");
+        String updateResult = StoreRepository.update(tableName, updates, pkValue);
+        statusLabel.setText(updateResult);
         loadTable();
     }
 

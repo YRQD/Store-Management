@@ -1,0 +1,4 @@
+2026-03-20 23:22:10 [AWT-EventQueue-0] INFO  data.repository.StoreRepository - INFO: a last login time: 2026-03-20 23:22:10.827
+2026-03-20 23:23:08 [AWT-EventQueue-0] INFO  data.repository.StoreRepository - Product with ID 12 updated successfully.
+2026-03-20 23:35:03 [AWT-EventQueue-0] WARN  data.repository.SqlHelper - User: asdfasd attempted to login with Password:asdfasdfsda
+2026-03-20 23:51:52 [AWT-EventQueue-0] WARN  data.repository.SqlHelper - User: adsf attempted to login with Password: adfsd

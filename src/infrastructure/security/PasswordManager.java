@@ -11,7 +11,8 @@ public class PasswordManager {
     public static boolean verifyPassword(String plainTextPassword, String hashedPasswordFromDB) {
         try {
             return BCrypt.checkpw(plainTextPassword, hashedPasswordFromDB);
-        } catch (IllegalArgumentException _) {
+        } catch (IllegalArgumentException e) {
+            org.slf4j.LoggerFactory.getLogger(PasswordManager.class).error("Failed to send print job: {}", e.getMessage());
             return false;
         }
     }
