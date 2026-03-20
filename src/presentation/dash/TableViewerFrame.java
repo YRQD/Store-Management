@@ -20,6 +20,7 @@ import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.util.List;
+import java.util.Map;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
@@ -336,7 +337,12 @@ public class TableViewerFrame extends JFrame {
     }
 
     private void applyTableModel(Object[][] data, String[] columns, String tableName) {
-        DefaultTableModel model = new DefaultTableModel(data, columns);
+        DefaultTableModel model = new DefaultTableModel(data, columns) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
         table.setModel(model);
         applyHeaderStyle();
         adjustColumnWidths();
@@ -415,7 +421,7 @@ public class TableViewerFrame extends JFrame {
         });
         if (managerRole) {
             printButton.addActionListener(_ -> printSelectedProduct());
-            editButton.addActionListener(_ -> editSelectedProduct());
+            editButton.addActionListener(_ -> editSelectedRow());
             table.getSelectionModel().addListSelectionListener(_ -> updatePrintButtonState());
         }
         clearSearchButton.addActionListener(_ -> clearSearch());
@@ -491,10 +497,9 @@ public class TableViewerFrame extends JFrame {
         if (!managerRole) {
             return;
         }
-        boolean tableOk = isProductsTableSelected();
         boolean rowSelected = table.getSelectedRow() >= 0;
-        printButton.setEnabled(tableOk && rowSelected);
-        editButton.setEnabled(tableOk && rowSelected);
+        printButton.setEnabled(isProductsTableSelected() && rowSelected);
+        editButton.setEnabled(rowSelected);
     }
 
     private boolean isProductsTableSelected() {
@@ -741,6 +746,57 @@ public class TableViewerFrame extends JFrame {
         );
         String updateResult = StoreRepository.updateProduct(product, productId, result.isActive());
         statusLabel.setText(updateResult);
+        loadTable();
+    }
+
+    private void editSelectedRow() {
+        if (isProductsTableSelected()) {
+            editSelectedProduct();
+            return;
+        }
+        int viewRow = ensureRowSelected("Please select a row first.");
+        if (viewRow < 0) {
+            return;
+        }
+        String tableName = resolveSelectedTable();
+        if (tableName.isEmpty()) {
+            showWarning("Please load a table first.");
+            return;
+        }
+        int modelRow = table.convertRowIndexToModel(viewRow);
+        DefaultTableModel model = (DefaultTableModel) table.getModel();
+
+        String pkColumn = SqlHelper.getPrimaryKeyName(tableName);
+        if (pkColumn.isBlank() || "1".equals(pkColumn)) {
+            showWarning("Unable to detect primary key for " + tableName + ".");
+            return;
+        }
+        int pkIndex = TableViewUtils.findColumnIndex(model, pkColumn);
+        if (pkIndex < 0) {
+            showWarning("Primary key column is not present in the loaded table.");
+            return;
+        }
+        Object pkValue = model.getValueAt(modelRow, pkIndex);
+        if (pkValue == null || pkValue.toString().isBlank()) {
+            showWarning("Primary key value is required to update.");
+            return;
+        }
+
+        Map<String, Object> updates = TableViewDialogs.showGenericEditDialog(
+                this,
+                tableName,
+                model,
+                modelRow,
+                model.getColumnName(pkIndex),
+                pkValue.toString(),
+                UI_FONT_SIZE
+        );
+        if (updates == null || updates.isEmpty()) {
+            return;
+        }
+
+        boolean updated = StoreRepository.update(tableName, updates, pkValue);
+        statusLabel.setText(updated ? "Update successful." : "Update failed.");
         loadTable();
     }
 

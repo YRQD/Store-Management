@@ -7,8 +7,11 @@ import static infrastructure.persistence.DatabaseConnection.con;
 import java.lang.reflect.Field;
 import java.sql.*;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 
 public class StoreRepository {
 
@@ -59,12 +62,7 @@ public class StoreRepository {
                 Field field = fields[i];
                 field.setAccessible(true);
                 Object value = field.get(object);
-                switch (value) {
-                    case String a -> stmt.setString(i + 1, a);
-                    case Integer b -> stmt.setInt(i + 1, b);
-                    case Float c -> stmt.setFloat(i + 1, c);
-                    case null, default -> stmt.setObject(i + 1, value);
-                }
+                SqlHelper.bindValue(stmt, i + 1, value);
             }
 
             stmt.execute();
@@ -116,5 +114,33 @@ public class StoreRepository {
             return "ERROR: UPDATING PRODUCT " + e.getMessage();
         }
     }
-}
 
+    public static boolean update(String tableName, Map<String, Object> updateData, Object pkValue) {
+        if (updateData == null || updateData.isEmpty() || pkValue == null)
+            return false;
+
+        String pkColumn = SqlHelper.getPrimaryKeyName(tableName);
+        if (pkColumn.isBlank() || "1".equals(pkColumn))
+            return false;
+
+        Map<String, Object> updates = new LinkedHashMap<>(updateData);
+        updates.remove(pkColumn);
+        if (updates.isEmpty())
+            return false;
+
+        List<String> columns = new ArrayList<>(updates.keySet());
+        String sql = SqlHelper.prepareUpdateSql(tableName, new LinkedHashSet<>(columns), pkColumn);
+
+        try (PreparedStatement stmt = con.prepareStatement(sql)) {
+            int index = 1;
+            for (Object value : updates.values())
+                SqlHelper.bindValue(stmt, index++, value);
+            SqlHelper.bindValue(stmt, index, pkValue);
+
+            return stmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Error updating table: " + tableName);
+            return false;
+        }
+    }
+}

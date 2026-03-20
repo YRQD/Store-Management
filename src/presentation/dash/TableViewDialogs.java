@@ -2,11 +2,15 @@ package presentation.dash;
 
 import domain.OptionItem;
 import presentation.theme.UiTheme;
+import data.repository.SqlHelper;
 
 import javax.swing.*;
 import javax.swing.border.LineBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.sql.Types;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 import static presentation.theme.UiTheme.*;
 import static presentation.theme.UiLayout.*;
@@ -181,6 +185,92 @@ public final class TableViewDialogs {
         );
     }
 
+    public static Map<String, Object> showGenericEditDialog(Component parent,
+                                                            String tableName,
+                                                            DefaultTableModel model,
+                                                            int modelRow,
+                                                            String idColumn,
+                                                            String idValue,
+                                                            float fontSize) {
+        Map<String, Integer> columnTypes = SqlHelper.getColumnTypes(tableName);
+
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(CARD_BG);
+        GridBagConstraints gbc = baseConstraints();
+
+        JTextField idField = buildReadOnlyField(idValue == null ? "" : idValue, fontSize);
+        addLabeledField(panel, gbc, 0, idColumn, idField, fontSize);
+
+        Map<String, JComponent> fieldMap = new LinkedHashMap<>();
+        int row = 1;
+        for (int col = 0; col < model.getColumnCount(); col++) {
+            String columnName = model.getColumnName(col);
+            if (columnName == null || columnName.isBlank()) {
+                continue;
+            }
+            if (columnName.equalsIgnoreCase(idColumn)) {
+                continue;
+            }
+            String value = TableViewUtils.getCellValue(model, modelRow, columnName);
+            JTextField field = new JTextField(value == null ? "" : value, 16);
+            applyFont(fontSize, field);
+            styleInput(field);
+            addLabeledField(panel, gbc, row++, columnName, field, fontSize);
+            fieldMap.put(columnName, field);
+        }
+
+        int result = JOptionPane.showConfirmDialog(
+                parent,
+                panel,
+                "Edit " + tableName,
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE
+        );
+        if (result != JOptionPane.OK_OPTION) {
+            return null;
+        }
+
+        Map<String, Object> updates = new LinkedHashMap<>();
+        for (Map.Entry<String, JComponent> entry : fieldMap.entrySet()) {
+            String columnName = entry.getKey();
+            JTextField field = (JTextField) entry.getValue();
+            String textValue = field.getText().trim();
+
+            Integer sqlType = columnTypes.get(columnName);
+            if (sqlType == null) {
+                updates.put(columnName, textValue.isEmpty() ? null : textValue);
+                continue;
+            }
+
+            Object parsed = parseValueForType(textValue, sqlType, parent, columnName);
+            if (parsed == INVALID_PARSE) {
+                return null;
+            }
+            updates.put(columnName, parsed);
+        }
+        return updates;
+    }
+
+    private static final Object INVALID_PARSE = new Object();
+
+    private static Object parseValueForType(String value, int sqlType, Component parent, String columnName) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return switch (sqlType) {
+                case Types.INTEGER, Types.SMALLINT, Types.TINYINT -> Integer.parseInt(value);
+                case Types.BIGINT -> Long.parseLong(value);
+                case Types.FLOAT, Types.REAL, Types.DOUBLE, Types.DECIMAL, Types.NUMERIC -> Double.parseDouble(value);
+                case Types.BIT, Types.BOOLEAN -> parseBoolean(value);
+                default -> value;
+            };
+        } catch (NumberFormatException e) {
+            showWarning(parent, "Invalid value for " + columnName + ".");
+            return INVALID_PARSE;
+        }
+    }
+
     public static void showWarning(Component parent, String message) {
         JOptionPane.showMessageDialog(parent, message, "Notice", JOptionPane.WARNING_MESSAGE);
     }
@@ -221,3 +311,4 @@ public final class TableViewDialogs {
                                     boolean isActive) {
     }
 }
+
