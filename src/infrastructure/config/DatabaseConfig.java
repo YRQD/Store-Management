@@ -8,9 +8,9 @@ import java.util.List;
 public class DatabaseConfig {
 
     public static String getSecureDbUrl() {
-        String appFolder = getAppFolder();
+        String appPartition = getAppPartition();
 
-        String dbFolderPath = appFolder + File.separator + ".store_manager_app";
+        String dbFolderPath = appPartition + File.separator + ".store_manager_app";
 
         return "jdbc:h2:file:" + dbFolderPath + File.separator + "db;CIPHER=AES;FILE_LOCK=FS";
     }
@@ -25,11 +25,12 @@ public class DatabaseConfig {
         return filePassword + " " + userPassword;
     }
 
-    public static String getAppFolder() {
+    public static String getAppPartition() {
         try {
             File appLocation = new File(DatabaseConfig.class.getProtectionDomain().getCodeSource().getLocation().toURI());
             String path = appLocation.getParent();
-                path = path.substring(0, path.indexOf('\\') + 1);
+            path = path.substring(0, path.indexOf('\\') + 1);
+            System.setProperty("MY_APP_ROOT", path.replace('\'', '/'));
             return path;
 
         } catch (URISyntaxException e) {

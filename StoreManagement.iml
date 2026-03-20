@@ -17,5 +17,7 @@
       </library>
     </orderEntry>
     <orderEntry type="library" name="h2-2.4.240" level="project" />
+    <orderEntry type="library" name="logback-core-1.4.14" level="project" />
+    <orderEntry type="library" name="jbcrypt-0.4" level="project" />
   </component>
 </module>

@@ -3,6 +3,7 @@ package data.repository;
 import domain.OptionItem;
 import domain.Product;
 import domain.TableResult;
+import org.slf4j.Logger;
 
 import static infrastructure.persistence.DatabaseConnection.con;
 
@@ -40,11 +41,15 @@ public class StoreRepository {
                 rows.add(row);
             }
         } catch (SQLException e) {
-            System.out.println("Error in getAllWithColumns: " + e.getMessage());
+//            System.out.println("Error in getAllWithColumns: " + e.getMessage());
+            Logger log = org.slf4j.LoggerFactory.getLogger(StoreRepository.class);
+            log.error("Error in getAllWithColumns: {}", e.getMessage());
             return new TableResult(new Object[0][0], new String[0]);
         }
 
         Object[][] data = new Object[rows.size()][columns.length];
+        Logger log = org.slf4j.LoggerFactory.getLogger(StoreRepository.class);
+        log.info("Successfully retrieved data from table: {} with condition: {}", tableName, condition);
         return new TableResult(rows.toArray(data), columns);
     }
 
