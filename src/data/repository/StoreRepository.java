@@ -52,6 +52,38 @@ public class StoreRepository {
         return new TableResult(rows.toArray(data), columns);
     }
 
+    public static TableResult getProductsBrief(String tableName, String userCondition) {
+        String primaryKeyColumn = SqlHelper.getPrimaryKeyName(tableName);
+        String sql = "SELECT BARCODE_SKU, PARTNAME, SELLINGPRICE, STOCKQUANTITY, BRAND, LOCATION FROM PRODUCTS WHERE ISACTIVE = TRUE AND STOCKQUANTITY > 0 AND (" + userCondition + ") ORDER BY " + primaryKeyColumn;
+
+        List<Object[]> rows = new ArrayList<>();
+        String[] columns;
+
+        try (Statement stmt = con.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+            ResultSetMetaData metaData = rs.getMetaData();
+            int columnsCount = metaData.getColumnCount();
+
+            columns = new String[columnsCount];
+            for (int i = 0; i < columnsCount; i++) {
+                columns[i] = metaData.getColumnName(i + 1);
+            }
+
+            while (rs.next()) {
+                Object[] row = new Object[columnsCount];
+                for (int i = 0; i < columnsCount; i++) {
+                    row[i] = rs.getObject(i + 1);
+                }
+                rows.add(row);
+            }
+        } catch (SQLException e) {
+            log.error("Failed to get products br: {}", e.getMessage());
+            return new TableResult(new Object[0][0], new String[0]);
+        }
+
+        Object[][] data = new Object[rows.size()][columns.length];
+        return new TableResult(rows.toArray(data), columns);
+    }
+
     public static List<OptionItem> getIdName(String tableName, String idColumn, String nameColumn) {
         List<OptionItem> options = new ArrayList<>();
         String sql = "SELECT " + idColumn + ", " + nameColumn + " FROM " + tableName + " ORDER BY " + nameColumn;

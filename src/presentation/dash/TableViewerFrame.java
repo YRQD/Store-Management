@@ -45,6 +45,7 @@ public class TableViewerFrame extends JFrame {
     private int hoveredRow = -1;
     private boolean categoriesLoaded = false;
     private boolean managerRole = false;
+    private boolean adminRole = false;
 
     private final JComboBox<String> tableNameCombo = new JComboBox<>(new String[] {"CATEGORIES", "PRODUCTS", "SUPPLIERS"});
     private final JComboBox<String> locationFilterCombo = new JComboBox<>(new String[] {LOCATION_ALL, LOCATION_SHOP, LOCATION_STORAGE});
@@ -64,6 +65,7 @@ public class TableViewerFrame extends JFrame {
     public TableViewerFrame(String defaultTable, String role) {
         super("Store Management");
         managerRole = isManager(role);
+        adminRole = isAdmin(role);
         searchDebounceTimer.setRepeats(false);
         initFrame();
         JTabbedPane tabs = buildTabs(defaultTable, role);
@@ -92,6 +94,10 @@ public class TableViewerFrame extends JFrame {
 
     private boolean isManager(String role) {
         return role != null && role.trim().equalsIgnoreCase("Manager");
+    }
+
+    private boolean isAdmin(String role) {
+        return role != null && role.trim().equalsIgnoreCase("Admin");
     }
 
     private void styleTabs(JTabbedPane tabs) {
@@ -203,6 +209,9 @@ public class TableViewerFrame extends JFrame {
         filterPanel.add(tableLabel);
         if (defaultTable != null && !defaultTable.isBlank()) {
             tableNameCombo.setSelectedItem(defaultTable);
+        }
+        if (adminRole) {
+            tableNameCombo.setModel(new DefaultComboBoxModel<>(new String[] {PRODUCTS_TABLE}));
         }
         filterPanel.add(tableNameCombo);
         filterPanel.add(locationLabel);
@@ -429,6 +438,7 @@ public class TableViewerFrame extends JFrame {
                 scheduleSearchRefresh();
             }
         });
+        searchField.addActionListener(_ -> searchField.selectAll());
         if (managerRole) {
             printButton.addActionListener(_ -> printSelectedProduct());
             editButton.addActionListener(_ -> editSelectedRow());
@@ -549,6 +559,12 @@ public class TableViewerFrame extends JFrame {
         new SwingWorker<TableResult, Void>() {
             @Override
             protected TableResult doInBackground() {
+                if (adminRole) {
+                    if (PRODUCTS_TABLE.equalsIgnoreCase(tableName)) {
+                        return StoreRepository.getProductsBrief(tableName, condition);
+                    }
+                    throw new RuntimeException("Access Denied for table: " + tableName);
+                }
                 return StoreRepository.getAllWithColumns(tableName, condition);
             }
 
