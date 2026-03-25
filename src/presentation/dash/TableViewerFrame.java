@@ -53,6 +53,7 @@ public class TableViewerFrame extends JFrame {
     private final JButton printButton = new JButton("Print");
     private final JButton editButton = new JButton("Edit");
     private final JButton markupButton = new JButton("Markup");
+    private final JButton alertButton = new JButton("Alerts");
     private final JTable table = new JTable();
     private final JScrollPane tableScrollPane = new JScrollPane(table);
     private final JLabel statusLabel = new JLabel(" ");
@@ -78,6 +79,7 @@ public class TableViewerFrame extends JFrame {
         setExtendedState(JFrame.MAXIMIZED_BOTH);
         setLocationRelativeTo(null);
         getContentPane().setBackground(APP_BG);
+        checkLowStockAlerts();
     }
 
     private JTabbedPane buildTabs(String defaultTable, String role) {
@@ -230,6 +232,7 @@ public class TableViewerFrame extends JFrame {
         JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         rightPanel.setBackground(CARD_BG);
         rightPanel.add(backupButton);
+        rightPanel.add(alertButton);
         if (managerRole) {
             rightPanel.add(printButton);
             rightPanel.add(editButton);
@@ -290,6 +293,7 @@ public class TableViewerFrame extends JFrame {
         backupButton.setFont(resolveFont(Font.BOLD, UI_FONT_SIZE, backupButton.getFont()));
         editButton.setFont(resolveFont(Font.BOLD, UI_FONT_SIZE, editButton.getFont()));
         markupButton.setFont(resolveFont(Font.BOLD, UI_FONT_SIZE, markupButton.getFont()));
+        alertButton.setFont(resolveFont(Font.BOLD, UI_FONT_SIZE, alertButton.getFont()));
 
         Dimension actionButtonSize = new Dimension(100, 34);
         loadButton.setPreferredSize(actionButtonSize);
@@ -297,11 +301,14 @@ public class TableViewerFrame extends JFrame {
         backupButton.setPreferredSize(actionButtonSize);
         editButton.setPreferredSize(actionButtonSize);
         markupButton.setPreferredSize(actionButtonSize);
+        alertButton.setPreferredSize(actionButtonSize);
 
         styleSecondaryButton(clearSearchButton);
         stylePrimaryButton(loadButton, PRIMARY);
         stylePrimaryButton(backupButton, new Color(0x27AE60));
         stylePrimaryButton(markupButton, new Color(0xD35400));
+        stylePrimaryButton(alertButton, TEXT_MUTED);
+        alertButton.setEnabled(false);
 
         if (managerRole) {
             stylePrimaryButton(printButton, new Color(0x424242));
@@ -450,6 +457,7 @@ public class TableViewerFrame extends JFrame {
             table.getSelectionModel().addListSelectionListener(_ -> updatePrintButtonState());
         }
         clearSearchButton.addActionListener(_ -> clearSearch());
+        alertButton.addActionListener(_ -> showLowStockDialog());
     }
 
     private void applyMarkup() {
@@ -610,6 +618,8 @@ public class TableViewerFrame extends JFrame {
                     }
 
                     applyTableModel(result.data(), result.columns(), tableName);
+                    checkLowStockAlerts();
+
                 } catch (Exception e) {
                     statusLabel.setText("Error loading data: " + e.getMessage());
                     System.out.println("Error loading table data: " + e.getMessage());
@@ -950,5 +960,50 @@ public class TableViewerFrame extends JFrame {
             }
         }
     }
-}
 
+    private void checkLowStockAlerts() {
+        new SwingWorker<List<String>, Void>() {
+            @Override
+            protected List<String> doInBackground() {
+                return StoreRepository.getLowStockProducts();
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    List<String> alerts = get();
+                    if (alerts != null && !alerts.isEmpty()) {
+                        stylePrimaryButton(alertButton, new Color(0xE74C3C));
+                        alertButton.setEnabled(true);
+                        alertButton.setText("Alerts (" + alerts.size() + ")");
+
+                        // Store alerts in button client property to retrieve on click
+                        alertButton.putClientProperty("alerts", alerts);
+                    } else {
+                        stylePrimaryButton(alertButton, TEXT_MUTED);
+                        alertButton.setEnabled(false);
+                        alertButton.setText("Alerts");
+                        alertButton.putClientProperty("alerts", null);
+                    }
+                } catch (Exception e) {
+                    System.err.println("Failed to check low stock: " + e.getMessage());
+                }
+            }
+        }.execute();
+    }
+
+    private void showLowStockDialog() {
+        @SuppressWarnings("unchecked")
+        List<String> alerts = (List<String>) alertButton.getClientProperty("alerts");
+        if (alerts == null || alerts.isEmpty()) return;
+
+        JTextArea textArea = new JTextArea(10, 40);
+        textArea.setText(String.join("\n", alerts));
+        textArea.setEditable(false);
+        textArea.setCaretPosition(0);
+        textArea.setFont(resolveFont(Font.PLAIN, UI_FONT_SIZE, textArea.getFont()));
+
+        JScrollPane scrollPane = new JScrollPane(textArea);
+        JOptionPane.showMessageDialog(this, scrollPane, "Low Stock Alerts", JOptionPane.WARNING_MESSAGE);
+    }
+}

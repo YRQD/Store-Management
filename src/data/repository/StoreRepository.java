@@ -254,4 +254,21 @@ public class StoreRepository {
             return false;
         }
     }
+
+    public static List<String> getLowStockProducts() {
+        List<String> alerts = new ArrayList<>();
+        String sql = "SELECT PARTNAME, STOCKQUANTITY, REORDERLEVEL FROM PRODUCTS WHERE STOCKQUANTITY <= REORDERLEVEL AND ISACTIVE = TRUE";
+
+        try (Statement stmt = con.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                String name = rs.getString("PARTNAME");
+                int stock = rs.getInt("STOCKQUANTITY");
+                int reorder = rs.getInt("REORDERLEVEL");
+                alerts.add(String.format("%s (Stock: %d, Reorder at: %d)", name, stock, reorder));
+            }
+        } catch (SQLException e) {
+            log.error("Failed to check low stock products: {}", e.getMessage());
+        }
+        return alerts;
+    }
 }
