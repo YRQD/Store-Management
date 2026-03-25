@@ -339,6 +339,21 @@ public final class TableViewDialogs {
         gbc.gridx = 1;
         panel.add(percentageField, gbc);
 
+        JCheckBox costCheck = new JCheckBox("Update Cost Price");
+        JCheckBox sellingCheck = new JCheckBox("Update Selling Price");
+        sellingCheck.setSelected(true);
+        applyFont(fontSize, costCheck, sellingCheck);
+        styleInput(costCheck);
+        styleInput(sellingCheck);
+
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.gridwidth = 2;
+        panel.add(costCheck, gbc);
+
+        gbc.gridy = 3;
+        panel.add(sellingCheck, gbc);
+
         int result = JOptionPane.showConfirmDialog(parent, panel, "Apply Price Markup", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         if (result == JOptionPane.OK_OPTION) {
@@ -347,7 +362,13 @@ public final class TableViewDialogs {
             try {
                 double percentage = Double.parseDouble(text.trim());
                 OptionItem selected = (OptionItem) categoryCombo.getSelectedItem();
-                return new MarkupRequest(percentage, selected != null ? selected.id() : null);
+                boolean updateCost = costCheck.isSelected();
+                boolean updateSelling = sellingCheck.isSelected();
+                if (!updateCost && !updateSelling) {
+                     JOptionPane.showMessageDialog(parent, "Please select at least one price to update.", "Input Error", JOptionPane.ERROR_MESSAGE);
+                     return null;
+                }
+                return new MarkupRequest(percentage, selected != null ? selected.id() : null, updateCost, updateSelling);
             } catch (NumberFormatException e) {
                 JOptionPane.showMessageDialog(parent, "Invalid percentage value: " + text, "Error", JOptionPane.ERROR_MESSAGE);
             }

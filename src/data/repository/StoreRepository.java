@@ -201,26 +201,51 @@ public class StoreRepository {
         }
     }
 
-    public static boolean applyPercentageMarkup(double percentage, Integer categoryId) {
+    public static boolean applyPercentageMarkup(double percentage, Integer categoryId, boolean updateCost, boolean updateSelling) {
+        if (!updateCost && !updateSelling) {
+            log.warn("Apply markup called with no target columns selected.");
+            return false;
+        }
+
         if (percentage <= -100.0) {
             log.error("SECURITY BLOCK: Attempted to discount products by {}%, which would result in negative prices!", percentage);
             return false;
         }
+
         double multiplier = 1.0 + (percentage / 100.0);
-        StringBuilder sql = new StringBuilder("UPDATE PRODUCTS SET sellingprice = sellingprice * ?");
-        if (categoryId != null)
+        StringBuilder sql = new StringBuilder("UPDATE PRODUCTS SET ");
+        List<String> setClauses = new ArrayList<>();
+        if (updateCost) {
+            setClauses.add("costprice = costprice * ?");
+        }
+        if (updateSelling) {
+            setClauses.add("sellingprice = sellingprice * ?");
+        }
+        sql.append(String.join(", ", setClauses));
+
+        if (categoryId != null) {
             sql.append(" WHERE categoryid = ?");
+        }
 
         try (PreparedStatement stmt = con.prepareStatement(sql.toString())) {
-            stmt.setDouble(1, multiplier);
-            if (categoryId != null)
-                stmt.setInt(2, categoryId);
+            int paramIndex = 1;
+
+            if (updateCost) {
+                stmt.setDouble(paramIndex++, multiplier);
+            }
+            if (updateSelling) {
+                stmt.setDouble(paramIndex++, multiplier);
+            }
+
+            if (categoryId != null) {
+                stmt.setInt(paramIndex, categoryId);
+            }
 
             int rowsAffected = stmt.executeUpdate();
             if (categoryId == null) {
-                log.info("Mass Price Update: Increased ALL products by {}%. ({} items updated)", percentage, rowsAffected);
+                log.info("Mass Price Update: Adjusted prices by {}%. ({} items updated)", percentage, rowsAffected);
             } else {
-                log.info("Category Price Update: Increased category {} by {}%. ({} items updated)", categoryId, percentage, rowsAffected);
+                log.info("Category Price Update: Adjusted category {} prices by {}%. ({} items updated)", categoryId, percentage, rowsAffected);
             }
             return true;
 

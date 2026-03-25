@@ -463,7 +463,7 @@ public class TableViewerFrame extends JFrame {
 
         MarkupRequest request = TableViewDialogs.showMarkupDialog(this, categories, UI_FONT_SIZE);
         if (request != null) {
-            boolean success = StoreRepository.applyPercentageMarkup(request.percentage(), request.categoryId());
+            boolean success = StoreRepository.applyPercentageMarkup(request.percentage(), request.categoryId(), request.updateCost(), request.updateSelling());
             if (success) {
                 JOptionPane.showMessageDialog(this, "Markup applied successfully.");
                 if (isProductsTableSelected()) {

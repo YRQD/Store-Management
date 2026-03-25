@@ -212,6 +212,7 @@ public class InsertionPanel extends JPanel {
     private void generateBarcode() {
         String barcode = infrastructure.printing.PrinterService.generateRandomCode();
         productBarcodeField.setText(barcode);
+        productBarcodeField.setEditable(false);
     }
 
     private void insertCategory() {
@@ -341,6 +342,7 @@ public class InsertionPanel extends JPanel {
         productCategoryCombo.setSelectedIndex(0);
         productSupplierCombo.setSelectedIndex(0);
         productBarcodeField.setText("");
+        productBarcodeField.setEditable(true);
         productPartNameField.setText("");
         productCostPriceField.setText("");
         productSellingPriceField.setText("");
