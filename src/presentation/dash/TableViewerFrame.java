@@ -5,11 +5,7 @@ import infrastructure.config.DatabaseConfig;
 import infrastructure.persistence.DatabaseConnection;
 import data.repository.SqlHelper;
 import data.repository.StoreRepository;
-import domain.Product;
-import domain.OptionItem;
-import domain.TableResult;
-import domain.PrintOptions;
-import domain.ProductEditResult;
+import domain.*;
 
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
@@ -56,11 +52,14 @@ public class TableViewerFrame extends JFrame {
     private final JButton backupButton = new JButton("Backup");
     private final JButton printButton = new JButton("Print");
     private final JButton editButton = new JButton("Edit");
+    private final JButton markupButton = new JButton("Markup");
     private final JTable table = new JTable();
     private final JScrollPane tableScrollPane = new JScrollPane(table);
     private final JLabel statusLabel = new JLabel(" ");
     private final Timer searchDebounceTimer = new Timer(300, _ -> executeSearch());
     private static final int TOP_PANEL_STACK_PADDING = 32;
+
+    private InsertionPanel insertionPanel;
 
     public TableViewerFrame(String defaultTable, String role) {
         super("Store Management");
@@ -86,7 +85,8 @@ public class TableViewerFrame extends JFrame {
         tabs.setFont(resolveFont(Font.BOLD, UI_FONT_SIZE, tabs.getFont()));
         tabs.addTab("Load Data", buildLoadPanel(defaultTable));
         if (isManager(role)) {
-            tabs.addTab("Insert Data", new InsertionPanel(this::refreshCategoryFilter));
+            insertionPanel = new InsertionPanel(this::refreshCategoryFilter);
+            tabs.addTab("Insert Data", insertionPanel);
         }
         styleTabs(tabs);
         return tabs;
@@ -214,10 +214,10 @@ public class TableViewerFrame extends JFrame {
             tableNameCombo.setModel(new DefaultComboBoxModel<>(new String[] {PRODUCTS_TABLE}));
         }
         filterPanel.add(tableNameCombo);
-        filterPanel.add(locationLabel);
-        filterPanel.add(locationFilterCombo);
         filterPanel.add(categoryLabel);
         filterPanel.add(categoryFilterCombo);
+        filterPanel.add(locationLabel);
+        filterPanel.add(locationFilterCombo);
 
         searchPanel.add(searchLabel);
         searchPanel.add(searchField);
@@ -233,6 +233,7 @@ public class TableViewerFrame extends JFrame {
         if (managerRole) {
             rightPanel.add(printButton);
             rightPanel.add(editButton);
+            rightPanel.add(markupButton);
         }
 
         configureTopPanelLayout(topPanel, leftPanel, rightPanel, true);
@@ -288,16 +289,19 @@ public class TableViewerFrame extends JFrame {
         printButton.setFont(resolveFont(Font.BOLD, UI_FONT_SIZE, printButton.getFont()));
         backupButton.setFont(resolveFont(Font.BOLD, UI_FONT_SIZE, backupButton.getFont()));
         editButton.setFont(resolveFont(Font.BOLD, UI_FONT_SIZE, editButton.getFont()));
+        markupButton.setFont(resolveFont(Font.BOLD, UI_FONT_SIZE, markupButton.getFont()));
 
         Dimension actionButtonSize = new Dimension(100, 34);
         loadButton.setPreferredSize(actionButtonSize);
         printButton.setPreferredSize(actionButtonSize);
         backupButton.setPreferredSize(actionButtonSize);
         editButton.setPreferredSize(actionButtonSize);
+        markupButton.setPreferredSize(actionButtonSize);
 
         styleSecondaryButton(clearSearchButton);
         stylePrimaryButton(loadButton, PRIMARY);
         stylePrimaryButton(backupButton, new Color(0x27AE60));
+        stylePrimaryButton(markupButton, new Color(0xD35400));
 
         if (managerRole) {
             stylePrimaryButton(printButton, new Color(0x424242));
@@ -442,9 +446,33 @@ public class TableViewerFrame extends JFrame {
         if (managerRole) {
             printButton.addActionListener(_ -> printSelectedProduct());
             editButton.addActionListener(_ -> editSelectedRow());
+            markupButton.addActionListener(_ -> applyMarkup());
             table.getSelectionModel().addListSelectionListener(_ -> updatePrintButtonState());
         }
         clearSearchButton.addActionListener(_ -> clearSearch());
+    }
+
+    private void applyMarkup() {
+        if (!managerRole) return;
+
+        java.util.List<OptionItem> categories = new java.util.ArrayList<>();
+        ComboBoxModel<OptionItem> model = categoryFilterCombo.getModel();
+        for (int i = 0; i < model.getSize(); i++) {
+            categories.add(model.getElementAt(i));
+        }
+
+        MarkupRequest request = TableViewDialogs.showMarkupDialog(this, categories, UI_FONT_SIZE);
+        if (request != null) {
+            boolean success = StoreRepository.applyPercentageMarkup(request.percentage(), request.categoryId());
+            if (success) {
+                JOptionPane.showMessageDialog(this, "Markup applied successfully.");
+                if (isProductsTableSelected()) {
+                    loadTable();
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Failed to apply markup.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }
 
     private void clearSearch() {
@@ -851,6 +879,17 @@ public class TableViewerFrame extends JFrame {
         String updateResult = StoreRepository.update(tableName, updates, pkValue);
         statusLabel.setText(updateResult);
         loadTable();
+
+        if ("CATEGORIES".equalsIgnoreCase(tableName)) {
+            refreshCategoryFilter();
+            if (insertionPanel != null) {
+                insertionPanel.refreshComboData();
+            }
+        } else if ("SUPPLIERS".equalsIgnoreCase(tableName)) {
+            if (insertionPanel != null) {
+                insertionPanel.refreshComboData();
+            }
+        }
     }
 
     private DefaultComboBoxModel<OptionItem> buildOptions(String table, String idColumn, String nameColumn, String emptyLabel) {

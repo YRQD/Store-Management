@@ -1,8 +1,6 @@
 package presentation.dash;
 
-import domain.OptionItem;
-import domain.PrintOptions;
-import domain.ProductEditResult;
+import domain.*;
 import presentation.theme.UiTheme;
 import data.repository.SqlHelper;
 import presentation.util.Validators;
@@ -308,4 +306,54 @@ public final class TableViewDialogs {
         field.setFont(UiTheme.resolveFont(Font.PLAIN, fontSize, field.getFont()));
         return field;
     }
+
+    public static MarkupRequest showMarkupDialog(Component parent, java.util.List<OptionItem> categories, float fontSize) {
+        JComboBox<OptionItem> categoryCombo = new JComboBox<>(new DefaultComboBoxModel<>(categories.toArray(new OptionItem[0])));
+        JTextField percentageField = new JTextField(10);
+
+        applyFont(fontSize, categoryCombo, percentageField);
+
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(CARD_BG);
+        GridBagConstraints gbc = baseConstraints();
+
+        JLabel catLabel = new JLabel("Category:");
+        catLabel.setFont(UiTheme.resolveFont(Font.PLAIN, fontSize, catLabel.getFont()));
+        catLabel.setForeground(TEXT_BODY);
+
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        panel.add(catLabel, gbc);
+
+        gbc.gridx = 1;
+        panel.add(categoryCombo, gbc);
+
+        JLabel pctLabel = new JLabel("Percentage Markup (%):");
+        pctLabel.setFont(UiTheme.resolveFont(Font.PLAIN, fontSize, pctLabel.getFont()));
+        pctLabel.setForeground(TEXT_BODY);
+
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        panel.add(pctLabel, gbc);
+
+        gbc.gridx = 1;
+        panel.add(percentageField, gbc);
+
+        int result = JOptionPane.showConfirmDialog(parent, panel, "Apply Price Markup", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+
+        if (result == JOptionPane.OK_OPTION) {
+            String text = percentageField.getText();
+            if (text == null || text.isBlank()) return null;
+            try {
+                double percentage = Double.parseDouble(text.trim());
+                OptionItem selected = (OptionItem) categoryCombo.getSelectedItem();
+                return new MarkupRequest(percentage, selected != null ? selected.id() : null);
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(parent, "Invalid percentage value: " + text, "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+        return null;
+    }
+
+
 }

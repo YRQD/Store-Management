@@ -200,4 +200,33 @@ public class StoreRepository {
             return "ERROR: UPDATING TABLE " + tableName + " WITH " + pkColumn + "=" + pkValue;
         }
     }
+
+    public static boolean applyPercentageMarkup(double percentage, Integer categoryId) {
+        if (percentage <= -100.0) {
+            log.error("SECURITY BLOCK: Attempted to discount products by {}%, which would result in negative prices!", percentage);
+            return false;
+        }
+        double multiplier = 1.0 + (percentage / 100.0);
+        StringBuilder sql = new StringBuilder("UPDATE PRODUCTS SET sellingprice = sellingprice * ?");
+        if (categoryId != null)
+            sql.append(" WHERE categoryid = ?");
+
+        try (PreparedStatement stmt = con.prepareStatement(sql.toString())) {
+            stmt.setDouble(1, multiplier);
+            if (categoryId != null)
+                stmt.setInt(2, categoryId);
+
+            int rowsAffected = stmt.executeUpdate();
+            if (categoryId == null) {
+                log.info("Mass Price Update: Increased ALL products by {}%. ({} items updated)", percentage, rowsAffected);
+            } else {
+                log.info("Category Price Update: Increased category {} by {}%. ({} items updated)", categoryId, percentage, rowsAffected);
+            }
+            return true;
+
+        } catch (SQLException e) {
+            log.error("Failed to apply {}% markup to category {}: {}", percentage, categoryId, e.getMessage());
+            return false;
+        }
+    }
 }

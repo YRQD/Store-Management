@@ -65,7 +65,7 @@ public class InsertionPanel extends JPanel {
         styleButtons();
         styleInputs();
         bindActions();
-        loadComboData();
+        refreshComboData();
     }
 
     private void buildLayout() {
@@ -228,7 +228,7 @@ public class InsertionPanel extends JPanel {
 
         Category category = new Category(name, description);
         String result = StoreRepository.insertInto(category, "CATEGORIES");
-        loadComboData();
+        refreshComboData();
         clearCategoryFields();
         statusLabel.setText(result);
         if (onCategoryInserted != null) {
@@ -266,7 +266,7 @@ public class InsertionPanel extends JPanel {
         );
 
         String result = StoreRepository.insertInto(supplier, "SUPPLIERS");
-        loadComboData();
+        refreshComboData();
         clearSupplierFields();
         statusLabel.setText(result);
     }
@@ -352,7 +352,7 @@ public class InsertionPanel extends JPanel {
     }
 
 
-    private void loadComboData() {
+    public void refreshComboData() {
         productCategoryCombo.setModel(buildOptions("categories", "categoryid", "categoryname", "Select category..."));
         productSupplierCombo.setModel(buildOptions("suppliers", "supplierid", "suppliername", "None"));
     }
