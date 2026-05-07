@@ -37,7 +37,7 @@ public class SqlHelper {
     }
 
     public static boolean barcodeExists(String barcode) {
-        String sql = "SELECT 1 FROM products WHERE barcode_sku = ? LIMIT 1";
+        String sql = "SELECT 1 FROM products WHERE barcode = ? LIMIT 1";
         try (PreparedStatement stmt = con.prepareStatement(sql)) {
             stmt.setString(1, barcode);
             try (ResultSet rs = stmt.executeQuery()) {

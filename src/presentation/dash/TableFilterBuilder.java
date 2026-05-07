@@ -6,29 +6,10 @@ public final class TableFilterBuilder {
     private TableFilterBuilder() {
     }
 
-    public static String buildProductsCondition(String locationAllLabel,
-                                                String locationShopLabel,
-                                                String locationStorageLabel,
-                                                Object locationSelection,
-                                                OptionItem categorySelection,
+    public static String buildProductsCondition(OptionItem categorySelection,
                                                 String rawSearch) {
-        return buildLocationCondition(locationAllLabel, locationShopLabel, locationStorageLabel, locationSelection)
-                + " AND " + buildCategoryCondition(categorySelection)
+        return buildCategoryCondition(categorySelection)
                 + " AND " + buildSearchCondition(rawSearch);
-    }
-
-    public static String buildLocationCondition(String locationAllLabel,
-                                                String locationShopLabel,
-                                                String locationStorageLabel,
-                                                Object locationSelection) {
-        String location = locationSelection == null ? locationAllLabel : locationSelection.toString();
-        if (locationShopLabel.equalsIgnoreCase(location)) {
-            return "location = 'Shop'";
-        }
-        if (locationStorageLabel.equalsIgnoreCase(location)) {
-            return "location = 'Storage'";
-        }
-        return "TRUE";
     }
 
     public static String buildCategoryCondition(OptionItem categorySelection) {
@@ -43,7 +24,6 @@ public final class TableFilterBuilder {
             return "TRUE";
         }
         String escaped = rawSearch.trim().replace("'", "''");
-        return "(barcode_sku ILIKE '%" + escaped + "%' OR partname ILIKE '%" + escaped + "%')";
+        return "(barcode ILIKE '%" + escaped + "%' OR name ILIKE '%" + escaped + "%')";
     }
 }
-

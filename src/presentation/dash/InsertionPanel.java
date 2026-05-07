@@ -36,10 +36,10 @@ public class InsertionPanel extends JPanel {
     private final JTextField productPartNameField = new JTextField(14);
     private final JTextField productCostPriceField = new JTextField(10);
     private final JTextField productSellingPriceField = new JTextField(10);
-    private final JTextField productStockQuantityField = new JTextField(10);
-    private final JTextField productBrandField = new JTextField(12);
+    private final JTextField productStorageQuantityField = new JTextField(10);
+    private final JTextField productShopQuantityField = new JTextField(10);
+    private final JTextField productBrandField = new JTextField(10);
     private final JTextField productReorderLevelField = new JTextField(10);
-    private final JComboBox<String> productLocationCombo = new JComboBox<>(new String[] {"Storage", "Shop"});
 
     private final JTextField supplierNameField = new JTextField(18);
     private final JTextField supplierPhoneField = new JTextField(18);
@@ -145,14 +145,14 @@ public class InsertionPanel extends JPanel {
         int row = 0;
         addLabeledField(panel, gbc, row++, "Category", productCategoryCombo, UI_FONT_SIZE);
         addLabeledField(panel, gbc, row++, "Supplier", productSupplierCombo, UI_FONT_SIZE);
-        addLabeledField(panel, gbc, row++, "Barcode/SKU", buildBarcodeField(), UI_FONT_SIZE);
-        addLabeledField(panel, gbc, row++, "Part Name", productPartNameField, UI_FONT_SIZE);
-        addLabeledField(panel, gbc, row++, "Cost Price", productCostPriceField, UI_FONT_SIZE);
-        addLabeledField(panel, gbc, row++, "Selling Price", productSellingPriceField, UI_FONT_SIZE);
-        addLabeledField(panel, gbc, row++, "Stock Quantity", productStockQuantityField, UI_FONT_SIZE);
+        addLabeledField(panel, gbc, row++, "Barcode", buildBarcodeField(), UI_FONT_SIZE);
+        addLabeledField(panel, gbc, row++, "Name", productPartNameField, UI_FONT_SIZE);
+        addLabeledField(panel, gbc, row++, "Cost", productCostPriceField, UI_FONT_SIZE);
+        addLabeledField(panel, gbc, row++, "Sell", productSellingPriceField, UI_FONT_SIZE);
+        addLabeledField(panel, gbc, row++, "Storage", productStorageQuantityField, UI_FONT_SIZE);
+        addLabeledField(panel, gbc, row++, "Shop", productShopQuantityField, UI_FONT_SIZE);
         addLabeledField(panel, gbc, row++, "Brand", productBrandField, UI_FONT_SIZE);
-        addLabeledField(panel, gbc, row++, "Reorder Level", productReorderLevelField, UI_FONT_SIZE);
-        addLabeledField(panel, gbc, row, "Location", productLocationCombo, UI_FONT_SIZE);
+        addLabeledField(panel, gbc, row++, "Reorder", productReorderLevelField, UI_FONT_SIZE);
 
         gbc.gridx = 0;
         gbc.gridy = row + 1;
@@ -193,10 +193,10 @@ public class InsertionPanel extends JPanel {
         styleInput(productPartNameField);
         styleInput(productCostPriceField);
         styleInput(productSellingPriceField);
-        styleInput(productStockQuantityField);
+        styleInput(productStorageQuantityField);
+        styleInput(productShopQuantityField);
         styleInput(productBrandField);
         styleInput(productReorderLevelField);
-        styleInput(productLocationCombo);
     }
 
     private void bindActions() {
@@ -301,24 +301,27 @@ public class InsertionPanel extends JPanel {
             return;
         }
         String partName = productPartNameField.getText().trim();
-        Float costPrice = requireFloat(productCostPriceField.getText(), "Cost Price", statusLabel::setText);
+        Float costPrice = requireFloat(productCostPriceField.getText(), "Cost", statusLabel::setText);
         if (costPrice == null) {
             return;
         }
-        Float sellingPrice = requireFloat(productSellingPriceField.getText(), "Selling Price", statusLabel::setText);
+        Float sellingPrice = requireFloat(productSellingPriceField.getText(), "Sell", statusLabel::setText);
         if (sellingPrice == null) {
             return;
         }
-        Integer stockQty = requireInt(productStockQuantityField.getText(), "Stock Quantity", statusLabel::setText);
-        if (stockQty == null) {
+        Integer storageQty = requireInt(productStorageQuantityField.getText(), "Storage", statusLabel::setText);
+        if (storageQty == null) {
+            return;
+        }
+        Integer shopQty = requireInt(productShopQuantityField.getText(), "Shop", statusLabel::setText);
+        if (shopQty == null) {
             return;
         }
         String brand = productBrandField.getText().trim();
-        Integer reorderLevel = requireInt(productReorderLevelField.getText(), "Reorder Level", statusLabel::setText);
+        Integer reorderLevel = requireInt(productReorderLevelField.getText(), "Reorder", statusLabel::setText);
         if (reorderLevel == null) {
             return;
         }
-        String location = (String) productLocationCombo.getSelectedItem();
 
         Product product = new Product(
                 categoryItem.id(),
@@ -327,14 +330,14 @@ public class InsertionPanel extends JPanel {
                 partName,
                 costPrice,
                 sellingPrice,
-                stockQty,
+                storageQty,
+                shopQty,
                 brand,
-                reorderLevel,
-                location
+                reorderLevel
         );
 
         String result = StoreRepository.insertInto(product, "PRODUCTS");
-        productBarcodeField.setText("");
+        clearProductFields();
         statusLabel.setText(result);
     }
 
@@ -346,11 +349,10 @@ public class InsertionPanel extends JPanel {
         productPartNameField.setText("");
         productCostPriceField.setText("");
         productSellingPriceField.setText("");
-        productStockQuantityField.setText("");
+        productStorageQuantityField.setText("");
+        productShopQuantityField.setText("");
         productBrandField.setText("");
         productReorderLevelField.setText("");
-        productLocationCombo.setSelectedIndex(0);
-        statusLabel.setText(" ");
     }
 
 

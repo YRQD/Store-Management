@@ -54,7 +54,7 @@ public class StoreRepository {
 
     public static TableResult getProductsBrief(String tableName, String userCondition) {
         String primaryKeyColumn = SqlHelper.getPrimaryKeyName(tableName);
-        String sql = "SELECT BARCODE_SKU, PARTNAME, SELLINGPRICE, STOCKQUANTITY, BRAND, LOCATION FROM PRODUCTS WHERE ISACTIVE = TRUE AND STOCKQUANTITY > 0 AND (" + userCondition + ") ORDER BY " + primaryKeyColumn;
+        String sql = "SELECT BARCODE, NAME, SELL, SHOP, BRAND FROM PRODUCTS WHERE ISACTIVE = TRUE AND SHOP > 0 AND (" + userCondition + ") ORDER BY " + primaryKeyColumn;
 
         List<Object[]> rows = new ArrayList<>();
         String[] columns;
@@ -133,8 +133,8 @@ public class StoreRepository {
     }
 
     public static String updateProduct(Product product, int productId, boolean isActive) {
-        String sql = "UPDATE products SET categoryid = ?, supplierid = ?, partname = ?, costprice = ?, sellingprice = ?, " +
-                "stockquantity = ?, brand = ?, reorderlevel = ?, location = ?, isactive = ? WHERE productid = ?";
+        String sql = "UPDATE products SET categoryid = ?, supplierid = ?, name = ?, cost = ?, sell = ?, " +
+                "storage = ?, shop = ?, brand = ?, reorder = ?, isactive = ? WHERE productid = ?";
         try (PreparedStatement stmt = con.prepareStatement(sql)) {
             stmt.setInt(1, product.categoryid);
             if (product.supplierid == null) {
@@ -142,13 +142,13 @@ public class StoreRepository {
             } else {
                 stmt.setInt(2, product.supplierid);
             }
-            stmt.setString(3, product.partname);
-            stmt.setFloat(4, product.costprice);
-            stmt.setFloat(5, product.sellingprice);
-            stmt.setInt(6, product.stockquantity);
-            stmt.setString(7, product.brand);
-            stmt.setInt(8, product.reorderlevel);
-            stmt.setString(9, product.location);
+            stmt.setString(3, product.name);
+            stmt.setFloat(4, product.cost);
+            stmt.setFloat(5, product.sell);
+            stmt.setInt(6, product.storage);
+            stmt.setInt(7, product.shop);
+            stmt.setString(8, product.brand);
+            stmt.setInt(9, product.reorder);
             stmt.setBoolean(10, isActive);
             stmt.setInt(11, productId);
 
@@ -216,10 +216,10 @@ public class StoreRepository {
         StringBuilder sql = new StringBuilder("UPDATE PRODUCTS SET ");
         List<String> setClauses = new ArrayList<>();
         if (updateCost) {
-            setClauses.add("costprice = costprice * ?");
+            setClauses.add("cost = cost * ?");
         }
         if (updateSelling) {
-            setClauses.add("sellingprice = sellingprice * ?");
+            setClauses.add("sell = sell * ?");
         }
         sql.append(String.join(", ", setClauses));
 
@@ -257,14 +257,14 @@ public class StoreRepository {
 
     public static List<String> getLowStockProducts() {
         List<String> alerts = new ArrayList<>();
-        String sql = "SELECT PARTNAME, STOCKQUANTITY, REORDERLEVEL FROM PRODUCTS WHERE STOCKQUANTITY <= REORDERLEVEL AND ISACTIVE = TRUE";
+        String sql = "SELECT NAME, STORAGE, REORDER FROM PRODUCTS WHERE STORAGE <= REORDER AND ISACTIVE = TRUE";
 
         try (Statement stmt = con.createStatement(); ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
-                String name = rs.getString("PARTNAME");
-                int stock = rs.getInt("STOCKQUANTITY");
-                int reorder = rs.getInt("REORDERLEVEL");
-                alerts.add(String.format("%s (Stock: %d, Reorder at: %d)", name, stock, reorder));
+                String name = rs.getString("NAME");
+                int storage = rs.getInt("STORAGE");
+                int reorder = rs.getInt("REORDER");
+                alerts.add(String.format("%s (Storage: %d, Reorder at: %d)", name, storage, reorder));
             }
         } catch (SQLException e) {
             log.error("Failed to check low stock products: {}", e.getMessage());

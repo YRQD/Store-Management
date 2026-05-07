@@ -3,27 +3,27 @@ package domain;
 public class Product {
     public int categoryid;
     public Integer supplierid;
-    public String barcode_sku;
-    public String partname;
-    public float costprice;
-    public float sellingprice;
-    public int stockquantity;
+    public String barcode;
+    public String name;
+    public float cost;
+    public float sell;
+    public int storage;
+    public int shop;
     public String brand;
-    public int reorderlevel;
-    public String location;
+    public int reorder;
 
-    public Product(int categoryid, Integer supplierid, String barcode_sku, String partname, float costprice, float sellingprice,
-                   int stockquantity, String brand, int reorderlevel, String location) {
+    public Product(int categoryid, Integer supplierid, String barcode, String name, float cost, float sell,
+                   int storage, int shop, String brand, int reorder) {
         this.categoryid = categoryid;
         this.supplierid = supplierid;
-        this.barcode_sku = barcode_sku;
-        this.partname = partname;
-        this.costprice = costprice;
-        this.sellingprice = sellingprice;
-        this.stockquantity = stockquantity;
+        this.barcode = barcode;
+        this.name = name;
+        this.cost = cost;
+        this.sell = sell;
+        this.storage = storage;
+        this.shop = shop;
         this.brand = brand;
-        this.reorderlevel = reorderlevel;
-        this.location = location;
+        this.reorder = reorder;
     }
 
 }

@@ -2,13 +2,12 @@ package domain;
 
 public record ProductEditResult(int categoryId,
                                 Integer supplierId,
-                                String partName,
-                                float costPrice,
-                                float sellingPrice,
-                                int stockQuantity,
+                                String name,
+                                float cost,
+                                float selling,
+                                int storage,
+                                int shop,
                                 String brand,
-                                int reorderLevel,
-                                String location,
+                                int reorder,
                                 boolean isActive) {
 }
-

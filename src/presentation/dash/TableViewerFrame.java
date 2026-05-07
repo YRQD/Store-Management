@@ -32,9 +32,6 @@ public class TableViewerFrame extends JFrame {
     private static final float HEADER_FONT_SIZE = 16f;
     private static final int MAX_WIDTH_SCAN_ROWS = 50;
 
-    private static final String LOCATION_ALL = "All";
-    private static final String LOCATION_SHOP = "Shop";
-    private static final String LOCATION_STORAGE = "Storage";
     private static final String CATEGORY_ALL_LABEL = "All categories";
     private static final String PRODUCTS_TABLE = "PRODUCTS";
 
@@ -44,7 +41,6 @@ public class TableViewerFrame extends JFrame {
     private boolean adminRole = false;
 
     private final JComboBox<String> tableNameCombo = new JComboBox<>(new String[] {"CATEGORIES", "PRODUCTS", "SUPPLIERS"});
-    private final JComboBox<String> locationFilterCombo = new JComboBox<>(new String[] {LOCATION_ALL, LOCATION_SHOP, LOCATION_STORAGE});
     private final JComboBox<OptionItem> categoryFilterCombo = new JComboBox<>();
     private final JTextField searchField = new JTextField(16);
     private final JButton clearSearchButton = new JButton("Clear");
@@ -54,6 +50,7 @@ public class TableViewerFrame extends JFrame {
     private final JButton editButton = new JButton("Edit");
     private final JButton markupButton = new JButton("Markup");
     private final JButton alertButton = new JButton("Alerts");
+    private final JPanel actionBar = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
     private final JTable table = new JTable();
     private final JScrollPane tableScrollPane = new JScrollPane(table);
     private final JLabel statusLabel = new JLabel(" ");
@@ -194,13 +191,11 @@ public class TableViewerFrame extends JFrame {
         searchPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JLabel tableLabel = buildTitleLabel("Table:", UI_FONT_SIZE);
-        JLabel locationLabel = buildTitleLabel("Location:", UI_FONT_SIZE);
         JLabel categoryLabel = buildTitleLabel("Category:", UI_FONT_SIZE);
         JLabel searchLabel = buildTitleLabel("Search:", UI_FONT_SIZE);
 
         applyFont(UI_FONT_SIZE,
                 tableNameCombo,
-                locationFilterCombo,
                 categoryFilterCombo,
                 searchField,
                 clearSearchButton
@@ -218,8 +213,6 @@ public class TableViewerFrame extends JFrame {
         filterPanel.add(tableNameCombo);
         filterPanel.add(categoryLabel);
         filterPanel.add(categoryFilterCombo);
-        filterPanel.add(locationLabel);
-        filterPanel.add(locationFilterCombo);
 
         searchPanel.add(searchLabel);
         searchPanel.add(searchField);
@@ -233,9 +226,16 @@ public class TableViewerFrame extends JFrame {
         rightPanel.setBackground(CARD_BG);
         rightPanel.add(backupButton);
         rightPanel.add(alertButton);
+
+        // Action Bar Configuration
+        actionBar.setBackground(CARD_BG);
+        actionBar.setVisible(false); // Hidden by default
+
         if (managerRole) {
-            rightPanel.add(printButton);
-            rightPanel.add(editButton);
+            actionBar.add(editButton);
+            actionBar.add(printButton);
+
+            rightPanel.add(actionBar);
             rightPanel.add(markupButton);
         }
 
@@ -279,11 +279,9 @@ public class TableViewerFrame extends JFrame {
 
     private void styleControls() {
         styleInput(tableNameCombo);
-        styleInput(locationFilterCombo);
         styleInput(categoryFilterCombo);
         styleInput(searchField);
         tableNameCombo.setPreferredSize(new Dimension(200, 34));
-        locationFilterCombo.setPreferredSize(new Dimension(160, 34));
         categoryFilterCombo.setPreferredSize(new Dimension(200, 34));
         searchField.setPreferredSize(new Dimension(200, 34));
         clearSearchButton.setPreferredSize(new Dimension(90, 34));
@@ -313,8 +311,6 @@ public class TableViewerFrame extends JFrame {
         if (managerRole) {
             stylePrimaryButton(printButton, new Color(0x424242));
             stylePrimaryButton(editButton, new Color(0xF59E0B));
-            printButton.setEnabled(false);
-            editButton.setEnabled(false);
         }
     }
 
@@ -350,6 +346,13 @@ public class TableViewerFrame extends JFrame {
                 if (hoveredRow != -1) {
                     hoveredRow = -1;
                     table.repaint();
+                }
+            }
+
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                if (table.rowAtPoint(e.getPoint()) == -1) {
+                    table.clearSelection();
                 }
             }
         });
@@ -554,8 +557,11 @@ public class TableViewerFrame extends JFrame {
             return;
         }
         boolean rowSelected = table.getSelectedRow() >= 0;
-        printButton.setEnabled(isProductsTableSelected() && rowSelected);
-        editButton.setEnabled(rowSelected);
+        actionBar.setVisible(rowSelected);
+
+        if (rowSelected) {
+            printButton.setVisible(isProductsTableSelected());
+        }
     }
 
     private boolean isProductsTableSelected() {
@@ -563,14 +569,12 @@ public class TableViewerFrame extends JFrame {
     }
 
     private void setFiltersEnabled(boolean enabled) {
-        locationFilterCombo.setEnabled(enabled);
         categoryFilterCombo.setEnabled(enabled);
         searchField.setEnabled(enabled);
         clearSearchButton.setEnabled(enabled);
     }
 
     private void resetFilters() {
-        locationFilterCombo.setSelectedItem(LOCATION_ALL);
         categoryFilterCombo.setSelectedIndex(0);
         searchField.setText("");
     }
@@ -640,10 +644,6 @@ public class TableViewerFrame extends JFrame {
         }
 
         return TableFilterBuilder.buildProductsCondition(
-                LOCATION_ALL,
-                LOCATION_SHOP,
-                LOCATION_STORAGE,
-                locationFilterCombo.getSelectedItem(),
                 categorySelection,
                 searchField.getText()
         );
@@ -797,7 +797,7 @@ public class TableViewerFrame extends JFrame {
             showWarning("productid column is required to update.");
             return;
         }
-        String barcode = TableViewUtils.getCellValue(model, modelRow, "barcode_sku");
+        String barcode = TableViewUtils.getCellValue(model, modelRow, "barcode");
 
         JComboBox<OptionItem> categoryCombo = buildOptionsCombo(
                 "categories", "categoryid", "categoryname", "Select category...");
@@ -827,13 +827,13 @@ public class TableViewerFrame extends JFrame {
                 result.categoryId(),
                 result.supplierId(),
                 barcode == null ? "" : barcode,
-                result.partName(),
-                result.costPrice(),
-                result.sellingPrice(),
-                result.stockQuantity(),
+                result.name(),
+                result.cost(),
+                result.selling(),
+                result.storage(),
+                result.shop(),
                 result.brand(),
-                result.reorderLevel(),
-                result.location()
+                result.reorder()
         );
         String updateResult = StoreRepository.updateProduct(product, productId, result.isActive());
         statusLabel.setText(updateResult);

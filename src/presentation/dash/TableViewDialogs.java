@@ -73,17 +73,14 @@ public final class TableViewDialogs {
         JTextField productIdField = buildReadOnlyField(String.valueOf(productId), fontSize);
         JTextField barcodeField = buildReadOnlyField(barcode == null ? "" : barcode, fontSize);
 
-        JTextField partNameField = new JTextField(TableViewUtils.getCellValue(model, modelRow, "partname"), 14);
-        JTextField costPriceField = new JTextField(TableViewUtils.getCellValue(model, modelRow, "costprice"), 10);
-        JTextField sellingPriceField = new JTextField(TableViewUtils.getCellValue(model, modelRow, "sellingprice"), 10);
-        JTextField stockQtyField = new JTextField(TableViewUtils.getCellValue(model, modelRow, "stockquantity"), 10);
+        JTextField partNameField = new JTextField(TableViewUtils.getCellValue(model, modelRow, "name"), 14);
+        JTextField costPriceField = new JTextField(TableViewUtils.getCellValue(model, modelRow, "coste"), 10);
+        JTextField sellingPriceField = new JTextField(TableViewUtils.getCellValue(model, modelRow, "sell"), 10);
+        JTextField storageQtyField = new JTextField(TableViewUtils.getCellValue(model, modelRow, "storage"), 10);
+        JTextField shopQtyField = new JTextField(TableViewUtils.getCellValue(model, modelRow, "shop"), 10);
         JTextField brandField = new JTextField(TableViewUtils.getCellValue(model, modelRow, "brand"), 12);
-        JTextField reorderLevelField = new JTextField(TableViewUtils.getCellValue(model, modelRow, "reorderlevel"), 10);
-        JComboBox<String> locationCombo = new JComboBox<>(new String[] {"Storage", "Shop"});
-        String locationValue = TableViewUtils.getCellValue(model, modelRow, "location");
-        if (locationValue != null && !locationValue.isBlank()) {
-            locationCombo.setSelectedItem(locationValue);
-        }
+        JTextField reorderLevelField = new JTextField(TableViewUtils.getCellValue(model, modelRow, "reorder"), 10);
+
         JCheckBox activeCheck = new JCheckBox("Active");
         String activeValue = TableViewUtils.getCellValue(model, modelRow, "isactive");
         activeCheck.setSelected(parseBoolean(activeValue));
@@ -92,12 +89,12 @@ public final class TableViewDialogs {
                 partNameField,
                 costPriceField,
                 sellingPriceField,
-                stockQtyField,
+                storageQtyField,
+                shopQtyField,
                 brandField,
                 reorderLevelField,
                 categoryCombo,
                 supplierCombo,
-                locationCombo,
                 activeCheck
         );
         styleInput(categoryCombo);
@@ -105,10 +102,10 @@ public final class TableViewDialogs {
         styleInput(partNameField);
         styleInput(costPriceField);
         styleInput(sellingPriceField);
-        styleInput(stockQtyField);
+        styleInput(storageQtyField);
+        styleInput(shopQtyField);
         styleInput(brandField);
         styleInput(reorderLevelField);
-        styleInput(locationCombo);
         styleInput(activeCheck);
 
         JPanel panel = new JPanel(new GridBagLayout());
@@ -117,16 +114,16 @@ public final class TableViewDialogs {
 
         int row = 0;
         addLabeledField(panel, gbc, row++, "Product ID", productIdField, fontSize);
-        addLabeledField(panel, gbc, row++, "Barcode/SKU", barcodeField, fontSize);
+        addLabeledField(panel, gbc, row++, "Barcode", barcodeField, fontSize);
         addLabeledField(panel, gbc, row++, "Category", categoryCombo, fontSize);
         addLabeledField(panel, gbc, row++, "Supplier", supplierCombo, fontSize);
-        addLabeledField(panel, gbc, row++, "Part Name", partNameField, fontSize);
-        addLabeledField(panel, gbc, row++, "Cost Price", costPriceField, fontSize);
-        addLabeledField(panel, gbc, row++, "Selling Price", sellingPriceField, fontSize);
-        addLabeledField(panel, gbc, row++, "Stock Quantity", stockQtyField, fontSize);
+        addLabeledField(panel, gbc, row++, "Name", partNameField, fontSize);
+        addLabeledField(panel, gbc, row++, "Cost", costPriceField, fontSize);
+        addLabeledField(panel, gbc, row++, "Sell", sellingPriceField, fontSize);
+        addLabeledField(panel, gbc, row++, "Storage", storageQtyField, fontSize);
+        addLabeledField(panel, gbc, row++, "Shop", shopQtyField, fontSize);
         addLabeledField(panel, gbc, row++, "Brand", brandField, fontSize);
-        addLabeledField(panel, gbc, row++, "Reorder Level", reorderLevelField, fontSize);
-        addLabeledField(panel, gbc, row++, "Location", locationCombo, fontSize);
+        addLabeledField(panel, gbc, row++, "Reorder", reorderLevelField, fontSize);
         addLabeledField(panel, gbc, row, "Active", activeCheck, fontSize);
 
         int result = JOptionPane.showConfirmDialog(
@@ -148,28 +145,31 @@ public final class TableViewDialogs {
         OptionItem supplierItem = (OptionItem) supplierCombo.getSelectedItem();
         Integer selectedSupplierId = supplierItem == null ? null : supplierItem.id();
 
-        String partName = requireText(partNameField.getText(), "Part Name", message -> showWarning(parent, message));
+        String partName = requireText(partNameField.getText(), "Name", message -> showWarning(parent, message));
         if (partName == null) {
             return null;
         }
-        Float costPrice = requireFloat(costPriceField.getText(), "Cost Price", message -> showWarning(parent, message));
+        Float costPrice = requireFloat(costPriceField.getText(), "Cost", message -> showWarning(parent, message));
         if (costPrice == null) {
             return null;
         }
-        Float sellingPrice = requireFloat(sellingPriceField.getText(), "Selling Price", message -> showWarning(parent, message));
+        Float sellingPrice = requireFloat(sellingPriceField.getText(), "Sell", message -> showWarning(parent, message));
         if (sellingPrice == null) {
             return null;
         }
-        Integer stockQty = requireInt(stockQtyField.getText(), "Stock Quantity", message -> showWarning(parent, message));
-        if (stockQty == null) {
+        Integer storageQty = requireInt(storageQtyField.getText(), "Storage", message -> showWarning(parent, message));
+        if (storageQty == null) {
+            return null;
+        }
+        Integer shopQty = requireInt(shopQtyField.getText(), "Shop", message -> showWarning(parent, message));
+        if (shopQty == null) {
             return null;
         }
         String brand = brandField.getText().trim();
-        Integer reorderLevel = requireInt(reorderLevelField.getText(), "Reorder Level", message -> showWarning(parent, message));
+        Integer reorderLevel = requireInt(reorderLevelField.getText(), "Reorder", message -> showWarning(parent, message));
         if (reorderLevel == null) {
             return null;
         }
-        String location = (String) locationCombo.getSelectedItem();
         boolean isActive = activeCheck.isSelected();
 
         return new ProductEditResult(
@@ -178,10 +178,10 @@ public final class TableViewDialogs {
                 partName,
                 costPrice,
                 sellingPrice,
-                stockQty,
+                storageQty,
+                shopQty,
                 brand,
                 reorderLevel,
-                location,
                 isActive
         );
     }
